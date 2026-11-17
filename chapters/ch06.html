@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 06 章 · 字符串与正则 | Java 学习手册</title>
+<meta name="description" content="String 不可变与常量池、常用 API 分类、== 与 equals、拼接性能、StringBuilder/StringBuffer、正则表达式。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<script>try{(function(){var a=JSON.parse(localStorage.getItem("java-appearance")||"null");if(!a)return;var r=document.documentElement,m={theme:"theme",ink:"ink",codeBg:"code-bg",codeInk:"code-ink",font:"font",leading:"leading",width:"width"};for(var k in m){var v=a[k];if(!v||(k==="ink"&&v==="auto"))continue;r.setAttribute("data-"+m[k],v);}})()}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/main.css?v=20261111b">
+</head>
+<body data-root="../" data-page="ch06">
+
+<div class="readbar"></div>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" data-menu aria-label="打开目录">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="../index.html">
+    <span class="brand-mark">J</span>
+    <span class="brand-text">
+      <span class="brand-name">Java 学习手册</span>
+      <span class="brand-sub">JavaSE · 12 chapters</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="../index.html">首页</a>
+    <a href="../index.html#chapters" class="active">章节目录</a>
+    <a href="../index.html#path">学习路径</a>
+    <a href="../index.html#tips">学习建议</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <button class="search-trigger" data-search-open>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <span>搜索知识点…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+  <div class="progress-pill" data-progress-pill></div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <div class="doc-with-toc">
+      <article class="doc">
+
+        <header class="chapter-head">
+          <span class="kicker">第 06 章 · 数据容器</span>
+          <h1>字符串与正则： <em>Java 里最重要的一个类</em></h1>
+          <p class="lede">String 是面试出现频率最高的类，没有之一。它不可变、有常量池、== 和 equals 表现不同、拼接有性能陷阱。这些不是零散的知识点，而是同一个设计决策连锁产生的后果——想通这一点，整章就通了。</p>
+          <div class="meta-row">
+            <span class="meta-chip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>约 <b>70 分钟</b></span>
+            <span class="meta-chip">7 个知识点</span>
+            <span class="meta-chip">1 张 API 速查表</span>
+            <span class="meta-chip">前置：第 05 章</span>
+          </div>
+        </header>
+
+        <div class="objectives">
+          <h4>学完这一章，你应该能够</h4>
+          <ul>
+            <li>解释 String 为什么设计成不可变</li>
+            <li>画图说明常量池的复用规则</li>
+            <li>按场景选对 API 方法</li>
+            <li>说清 == 与 equals 的适用边界</li>
+            <li>在循环中选对拼接方式</li>
+            <li>写出手机号、邮箱校验正则</li>
+          </ul>
+        </div>
+
+        <h2 id="string-pool"><span class="h2-num">6.1</span>不可变：一个决定，连锁反应</h2>
+        <p class="h2-sub">String 一旦创建，内容永远不变；所有「修改」都是新建。</p>
+
+        <p>String 内部用一个 <code>private final</code> 的字符数组保存内容，且不提供任何修改该数组的方法。所以 <code>toUpperCase()</code>、<code>replace()</code>、<code>concat()</code> 看起来在改字符串，实际都返回了一个<strong>新对象</strong>，原对象原封不动。</p>
+
+        <p>这个设计不是为了省事，而是为了解决四个真实问题：</p>
+        <ul>
+          <li><strong>可以安全共享。</strong> 常量池里同一个 "hello" 能被无数变量引用，谁都不能改它，所以不需要复制。</li>
+          <li><strong>天然线程安全。</strong> 多线程读写同一个 String 不需要加锁。</li>
+          <li><strong>hashCode 可以缓存。</strong> 内容不变，哈希值算一次就够，作为 HashMap 的键非常高效。</li>
+          <li><strong>传参安全。</strong> 把字符串传给方法，不用担心对方把它改掉。</li>
+        </ul>
+
+        <div class="concept">
+          <span class="co-label">字符串常量池</span>
+          <p>JVM 在堆中维护一块区域专门存放字符串字面量。用字面量方式创建时，先查池里有没有内容相同的对象：有就复用，没有才新建。所以 <code>String a = "hi"; String b = "hi";</code> 中 a 和 b 指向同一个对象。</p>
+        </div>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">三种创建方式的差别</span><span class="code-lang">java</span></div>
+          <pre><code>String s1 = "hello";                 // 复用常量池
+String s2 = "hello";                 // 复用同一个对象
+String s3 = new String("hello");     // 强制在堆中新建
+
+System.out.println(s1 == s2);        // true
+System.out.println(s1 == s3);        // false
+System.out.println(s1.equals(s3));   // true</code></pre>
+        </div>
+
+        <p>还有一个细节：<code>"he" + "llo"</code> 这种<strong>编译期常量折叠</strong>，编译器会直接合成 "hello"，结果仍然指向常量池；但如果拼接里有变量，就只能在运行期新建对象。这解释了为什么两道看起来一样的题，答案可能不同。</p>
+
+        <h2 id="string-api"><span class="h2-num">6.2</span>常用 API：按用途记，不要按字母背</h2>
+        <p class="h2-sub">分成五组，用的时候能想起来就够了。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>分组</th><th>方法</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td rowspan="4">查询</td><td><code>length()</code></td><td>字符个数（注意不是字节数）</td></tr>
+              <tr><td><code>charAt(i)</code></td><td>取第 i 个字符，越界会抛异常</td></tr>
+              <tr><td><code>indexOf / lastIndexOf</code></td><td>找子串位置，找不到返回 -1</td></tr>
+              <tr><td><code>contains / startsWith / endsWith</code></td><td>判断包含、前缀、后缀</td></tr>
+              <tr><td rowspan="3">截取与替换</td><td><code>substring(b, e)</code></td><td>左闭右开，取不到 e</td></tr>
+              <tr><td><code>replace(a, b)</code></td><td>普通字符串替换，全部替换</td></tr>
+              <tr><td><code>replaceAll(regex, s)</code></td><td>正则替换，功能更强</td></tr>
+              <tr><td rowspan="3">转换</td><td><code>toUpperCase / toLowerCase</code></td><td>大小写转换</td></tr>
+              <tr><td><code>trim / strip</code></td><td>去首尾空白，strip 支持 Unicode</td></tr>
+              <tr><td><code>toCharArray / getBytes</code></td><td>转字符数组 / 字节数组</td></tr>
+              <tr><td rowspan="3">判断</td><td><code>equals / equalsIgnoreCase</code></td><td>内容比较，区分/忽略大小写</td></tr>
+              <tr><td><code>isEmpty / isBlank</code></td><td>空串 / 全空白</td></tr>
+              <tr><td><code>matches(regex)</code></td><td>整串匹配正则</td></tr>
+              <tr><td rowspan="2">拆分拼接</td><td><code>split(regex)</code></td><td>按正则切分，参数是正则！</td></tr>
+              <tr><td><code>String.join(sep, items)</code></td><td>用分隔符连接多个字符串</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">典型组合用法</span><span class="code-lang">java</span></div>
+          <pre><code>String text = "  Hello, Java World!  ";
+String clean = text.trim();
+clean.substring(0, 5);              // "Hello"
+clean.replaceAll("[^a-zA-Z]", "");  // 去掉非字母
+"张三,18,男".split(",");             // ["张三","18","男"]</code></pre>
+        </div>
+
+        <div class="callout warn">
+          <span class="co-title">split 的两个坑</span>
+          <p>① 参数是<strong>正则</strong>，切 <code>.</code>、<code>|</code>、<code>*</code> 必须转义：<code>split("\\.")</code>，否则 <code>.</code> 会匹配任意字符，整个字符串被切没。② 末尾的连续空串会被丢弃，需要保留时写 <code>split(",", -1)</code>。</p>
+        </div>
+
+        <h2 id="string-eq"><span class="h2-num">6.3</span>== 与 equals：地址和内容的区别</h2>
+        <p class="h2-sub">引用类型比较内容，永远用 equals。</p>
+
+        <p><code>==</code> 比较的是变量里的值。对基本类型来说，这个值就是数据本身，所以比较内容；对引用类型来说，这个值是地址，所以比较<strong>是否指向同一个对象</strong>。String 是引用类型，因此 <code>==</code> 判断不了内容是否相同。</p>
+
+        <p>另一个高频问题是 null 与空串的区别。<code>null</code> 表示「没有指向任何对象」，调用任何方法都会崩；<code>""</code> 是一个长度为 0 的真实对象，可以正常调用方法。判空必须两者都考虑：</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">安全判空</span><span class="code-lang">java</span></div>
+          <pre><code>public static boolean isBlank(String s) {
+    return s == null || s.trim().isEmpty();
+}
+// 或 Java 11+
+return s != null &amp;&amp; !s.isBlank();</code></pre>
+        </div>
+
+        <p>还有一个容易被忽略的点：<code>String.equals(StringBuilder)</code> 永远返回 false。因为 StringBuilder 没有重写 equals，比较退化成地址比较。需要比较内容时用 <code>contentEquals</code>。</p>
+
+        <h2 id="string-concat"><span class="h2-num">6.4</span>拼接：单行随意，循环必须换</h2>
+        <p class="h2-sub">编译器会优化单行拼接，但救不了循环里的 +=。</p>
+
+        <p>因为不可变，每次 <code>+</code> 都要创建新的 StringBuilder、复制旧内容、再 toString 成新 String。在循环里做 n 次，总复制量是 1+2+...+n ≈ n²/2。数据量一大，耗时就从毫秒涨到秒。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">两种写法的差距</span><span class="code-lang">java</span></div>
+          <pre><code>String s = "";
+for (int i = 0; i &lt; 20000; i++) s += i;      // 数百毫秒
+
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i &lt; 20000; i++) sb.append(i); // 几毫秒</code></pre>
+        </div>
+
+        <div class="callout tip">
+          <span class="co-title">单行拼接不用改</span>
+          <p><code>"姓名：" + name + "，年龄：" + age</code> 编译后会自动变成 StringBuilder 链式调用，性能没问题。<strong>只有循环内、或跨多步累积字符串时，才需要手动用 StringBuilder。</strong></p>
+        </div>
+
+        <h2 id="string-builder"><span class="h2-num">6.5</span>StringBuilder 与 StringBuffer</h2>
+        <p class="h2-sub">可变字符序列，拼接不产生新对象；一个快，一个线程安全。</p>
+
+        <p>两者的 API 几乎一样，区别只在线程安全：StringBuffer 的每个方法都加了 <code>synchronized</code>，多线程共享同一个缓冲区时安全，但单线程下有额外的锁开销。<strong>日常开发 99% 的场景用 StringBuilder</strong>，只有在确定会被多线程共享时才用 StringBuffer。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>特性</th><th>String</th><th>StringBuilder</th><th>StringBuffer</th></tr></thead>
+            <tbody>
+              <tr><td>可变性</td><td>不可变</td><td>可变</td><td>可变</td></tr>
+              <tr><td>线程安全</td><td>安全（不可变）</td><td>不安全</td><td>安全（加锁）</td></tr>
+              <tr><td>拼接性能</td><td>差</td><td>最好</td><td>稍慢</td></tr>
+              <tr><td>典型用途</td><td>常量、少量拼接</td><td>单线程大量拼接</td><td>多线程共享拼接</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>它的常用方法都返回 <code>this</code>，所以可以链式调用。<code>append</code> 追加、<code>insert</code> 插入、<code>delete</code> 删除、<code>reverse</code> 反转、<code>toString</code> 转回 String。反转这个能力让「回文判断」一行就能写完。</p>
+
+        <h2 id="string-format"><span class="h2-num">6.6</span>格式化与 join：让输出更规范</h2>
+        <p class="h2-sub">对齐、补零、千分位，都靠占位符解决。</p>
+
+        <p><code>String.format</code> 用占位符拼字符串，常用的是 <code>%s</code>（字符串）、<code>%d</code>（整数）、<code>%f</code>（小数）、<code>%c</code>（字符）。在 <code>%</code> 和字母之间可以加宽度与精度：<code>%8.2f</code> 表示总宽 8、保留两位小数，<code>%-8s</code> 表示左对齐、宽度 8，<code>%06d</code> 表示不足 6 位补零。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">格式化输出</span><span class="code-lang">java</span></div>
+          <pre><code>String.format("%-8s|%5d|%8.2f", "张三", 18, 92.5);
+String.format("订单号：%06d", 42);    // 000042
+String.format("%,d", 12345678);       // 12,345,678
+String.join(" / ", new String[]{"A", "B"});   // A / B</code></pre>
+        </div>
+
+        <p>需要拼接一组数据时，<code>String.join</code> 比手写循环更简洁，也比 StringBuilder 更不容易出错。日志输出、SQL 拼装（虽然不推荐这么干）、CSV 生成都会用到。</p>
+
+        <h2 id="regex"><span class="h2-num">6.7</span>正则表达式：描述「什么样的字符串」</h2>
+        <p class="h2-sub">校验、提取、替换，三件事一次解决。</p>
+
+        <p>正则不是 Java 独有的，它是一套通用的文本模式语言。学习的诀窍是<strong>从需求反推符号</strong>：要「11 位数字且以 1 开头」，就先写 <code>1</code>，再写 <code>\d{10}</code>，最后加 <code>^...$</code> 锚定整串，得到 <code>^1\d{10}$</code>。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>符号</th><th>含义</th><th>记忆方式</th></tr></thead>
+            <tbody>
+              <tr><td><code>\d</code> / <code>\w</code> / <code>\s</code></td><td>数字 / 字母数字下划线 / 空白</td><td>d=digit, w=word, s=space</td></tr>
+              <tr><td><code>.</code></td><td>任意字符（不含换行）</td><td>通配符</td></tr>
+              <tr><td><code>[abc]</code> / <code>[^abc]</code></td><td>其中之一 / 除它们之外</td><td>方括号是集合，^ 是取反</td></tr>
+              <tr><td><code>* + ?</code></td><td>0 次以上 / 1 次以上 / 0 或 1 次</td><td>数量修饰</td></tr>
+              <tr><td><code>{n,m}</code></td><td>n 到 m 次</td><td>精确数量</td></tr>
+              <tr><td><code>^ $</code></td><td>行首 / 行尾</td><td>锚定整串</td></tr>
+              <tr><td><code>() |</code></td><td>分组 / 或</td><td>提取用分组，选择用竖线</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">校验与提取</span><span class="code-lang">java</span></div>
+          <pre><code>"13800138000".matches("1[3-9]\\d{9}");    // true
+"a1b22c333".split("\\d+");                // [a, b, c]
+
+Matcher m = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})")
+                   .matcher("2024-07-11");
+if (m.find()) System.out.println(m.group(1));   // 2024</code></pre>
+        </div>
+
+        <p>两个 API 的区别值得记住：<code>String.matches()</code> 要求<strong>整串完全匹配</strong>，适合格式校验；<code>Matcher.find()</code> 只要找到<strong>任意一段</strong>匹配即可，适合从长文本中提取。用错会导致「明明有却匹配不上」或「部分匹配被当成合法」。</p>
+
+        <div class="callout info">
+          <span class="co-title">性能提醒</span>
+          <p>正则在编译阶段有成本。同一个正则需要反复使用时，应提前 <code>Pattern.compile()</code> 成对象复用，而不是每次都调用 <code>String.matches()</code>（它内部每次都会重新编译）。</p>
+        </div>
+
+        <hr>
+
+        <h2 id="summary"><span class="h2-num">小结</span>这一章真正要记住的</h2>
+        <div class="summary">
+          <h4>Key takeaways</h4>
+          <ol>
+            <li><strong>String 不可变。</strong> 共享安全、线程安全、hashCode 可缓存、传参安全，四个好处都源于此。</li>
+            <li><strong>字面量走常量池，new 一定新建。</strong> 编译期常量折叠仍指向池中对象，含变量的拼接则在运行期新建。</li>
+            <li><strong>== 比地址，equals 比内容。</strong> 引用类型判内容永远用 equals，并注意 null 的判断。</li>
+            <li><strong>循环内拼接用 StringBuilder。</strong> 单行拼接交给编译器优化，不用手改。</li>
+            <li><strong>StringBuilder 快、StringBuffer 安全。</strong> 单线程无脑选前者。</li>
+            <li><strong>split 的参数是正则，特殊字符要转义。</strong></li>
+            <li><strong>matches 整串匹配，find 局部查找。</strong> 校验用前者，提取用后者。</li>
+          </ol>
+        </div>
+
+        <h2 id="quiz"><span class="h2-num">自测</span>检查一下你真的懂了吗</h2>
+        <div class="quiz">
+          <details>
+            <summary>为什么说 String 是不可变的？这种设计带来什么好处？</summary>
+            <div class="answer">内部用 <code>private final char[]</code>（Java 9 后是 byte[]）保存内容，不提供修改该数组的方法，所有修改都返回新对象。好处：可安全共享、线程安全、hashCode 可缓存、适合做 Map 的键。</div>
+          </details>
+          <details>
+            <summary><code>String s = new String("abc");</code> 创建了几个对象？</summary>
+            <div class="answer">最多两个：常量池中的 "abc"（若已存在则复用，不新建）+ 堆中 new 出来的新对象。所以通常回答「1 个或 2 个」。</div>
+          </details>
+          <details>
+            <summary>为什么循环里推荐 StringBuilder 而不是 +=？</summary>
+            <div class="answer">String 不可变，每次 += 都要新建 StringBuilder、复制旧内容、再生成新 String，n 次循环总复制量约 n²/2；StringBuilder 在内部数组上追加，必要时扩容，整体 O(n)。</div>
+          </details>
+          <details>
+            <summary><code>"a.b.c".split(".")</code> 的结果是什么？为什么？</summary>
+            <div class="answer">返回空数组（长度 0）。因为参数是正则，"." 表示任意字符，整个字符串被当成一个匹配切走了。正确写法是 <code>split("\\.")</code>。</div>
+          </details>
+          <details>
+            <summary>如何判断一个字符串既不是 null、也不是空串、也不全是空格？</summary>
+            <div class="answer"><code>s != null &amp;&amp; !s.isBlank()</code>（Java 11+）；旧版本写 <code>s != null &amp;&amp; s.trim().length() &gt; 0</code>。</div>
+          </details>
+        </div>
+
+        <div class="chapter-cta">
+          <div class="txt">
+            <strong>本章结束</strong>
+            <span>标记后进度会保存在本地，下次打开自动恢复。</span>
+          </div>
+          <button class="btn btn-primary" id="markDone" type="button"></button>
+        </div>
+
+        <nav class="chapter-nav">
+          <a href="ch05.html">
+            <span class="dir">← 上一章</span>
+            <span class="ttl">05 · 数组</span>
+          </a>
+          <a class="next" href="ch07.html">
+            <span class="dir">下一章 →</span>
+            <span class="ttl">07 · 包装类与 Object 体系</span>
+          </a>
+        </nav>
+
+      </article>
+      <aside class="toc" data-toc></aside>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Java 学习手册 · 第 06 章</span>
+    <a href="../index.html#chapters">← 返回章节目录</a>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="回到顶部">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script src="../assets/js/data.js?v=20261111b"></script>
+<script src="../assets/js/site.js?v=20261111b"></script>
+</body>
+</html>

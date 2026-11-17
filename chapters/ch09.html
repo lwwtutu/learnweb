@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 09 章 · 继承与多态 | Java 学习手册</title>
+<meta name="description" content="继承的语义与方法重写、super 与构造器执行顺序、权限修饰符、多态的动态绑定、向上向下转型、instanceof 与 final。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<script>try{(function(){var a=JSON.parse(localStorage.getItem("java-appearance")||"null");if(!a)return;var r=document.documentElement,m={theme:"theme",ink:"ink",codeBg:"code-bg",codeInk:"code-ink",font:"font",leading:"leading",width:"width"};for(var k in m){var v=a[k];if(!v||(k==="ink"&&v==="auto"))continue;r.setAttribute("data-"+m[k],v);}})()}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/main.css?v=20261111b">
+</head>
+<body data-root="../" data-page="ch09">
+
+<div class="readbar"></div>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" data-menu aria-label="打开目录">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="../index.html">
+    <span class="brand-mark">J</span>
+    <span class="brand-text">
+      <span class="brand-name">Java 学习手册</span>
+      <span class="brand-sub">JavaSE · 12 chapters</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="../index.html">首页</a>
+    <a href="../index.html#chapters" class="active">章节目录</a>
+    <a href="../index.html#path">学习路径</a>
+    <a href="../index.html#tips">学习建议</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <button class="search-trigger" data-search-open>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <span>搜索知识点…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+  <div class="progress-pill" data-progress-pill></div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <div class="doc-with-toc">
+      <article class="doc">
+
+        <header class="chapter-head">
+          <span class="kicker">第 09 章 · 面向对象</span>
+          <h1>继承与多态： <em>一套代码，管一群对象</em></h1>
+          <p class="lede">继承解决「重复」，多态解决「扩展」。当你能写出一句 <code>animal.speak()</code> 就自动调度到狗叫或猫叫时，你才真正摸到了面向对象的门。这两个机制也是所有框架和设计模式的底层原理。</p>
+          <div class="meta-row">
+            <span class="meta-chip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>约 <b>75 分钟</b></span>
+            <span class="meta-chip">6 个知识点</span>
+            <span class="meta-chip">面试必考</span>
+            <span class="meta-chip">前置：第 08 章</span>
+          </div>
+        </header>
+
+        <div class="objectives">
+          <h4>学完这一章，你应该能够</h4>
+          <ul>
+            <li>判断什么时候该用继承</li>
+            <li>正确重写方法并用 @Override 校验</li>
+            <li>说出子类对象的构造顺序</li>
+            <li>用 super 调用父类成员与构造器</li>
+            <li>解释多态的编译期与运行期差异</li>
+            <li>安全地完成向下转型</li>
+            <li>判断何时用 final</li>
+          </ul>
+        </div>
+
+        <h2 id="extends"><span class="h2-num">9.1</span>继承：表达「是一个」的关系</h2>
+        <p class="h2-sub">Dog 是一个 Animal，所以 Dog 可以继承 Animal。</p>
+
+        <p>继承的语法是 <code>class 子类 extends 父类</code>。语义上它表达的是 <strong>is-a</strong>：狗是一种动物，所以狗自动继承动物的一切共性。反例是「汽车有发动机」，这是 has-a，应该用组合（把发动机作为字段），而不是继承。</p>
+
+        <p>Java 只支持<strong>单继承</strong>：一个类只能有一个直接父类。这是为了避开 C++ 菱形继承的二义性问题——如果 A 同时继承 B 和 C，而 B、C 又有同名方法，调用时该用哪个？Java 用单继承 + 多接口实现绕开了这个难题。</p>
+
+        <div class="concept">
+          <span class="co-label">子类继承了什么</span>
+          <p>继承父类<strong>非 private</strong> 的成员变量和方法；<strong>不继承</strong>构造器（但必须调用）；父类的 private 成员虽然存在于子类对象中，但子类不能直接访问，只能通过 getter。所有类最终都继承 Object。</p>
+        </div>
+
+        <p><strong>方法重写（Override）</strong>是继承的关键动作：子类提供与父类「方法名相同、参数列表相同」的新实现。重写有三条约束——访问权限不能变小、返回值必须相同或是其子类型、不能抛出更宽的受检异常。掌握这些约束的最简单方式，就是永远加 <code>@Override</code>，让编译器替你检查。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>对比项</th><th>重写 Override</th><th>重载 Overload</th></tr></thead>
+            <tbody>
+              <tr><td>发生位置</td><td>子类与父类之间</td><td>同一个类中</td></tr>
+              <tr><td>方法名</td><td>相同</td><td>相同</td></tr>
+              <tr><td>参数列表</td><td>必须相同</td><td>必须不同</td></tr>
+              <tr><td>绑定时机</td><td>运行期，看真实对象</td><td>编译期，看参数类型</td></tr>
+              <tr><td>与多态的关系</td><td>多态的前提</td><td>无关</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="super"><span class="h2-num">9.2</span>super 与构造顺序</h2>
+        <p class="h2-sub">子类对象里一定先有一个完整的父类部分。</p>
+
+        <p><code>super</code> 有两个用途：一是访问父类被重写的方法或被子类遮蔽的字段（<code>super.speak()</code>），二是在子类构造器第一行调用父类构造器（<code>super(name, age)</code>）。</p>
+
+        <p>如果不写 <code>super(...)</code>，编译器会自动插入无参的 <code>super()</code>。所以<strong>父类如果没有无参构造器，子类必须显式调用有参版本</strong>，否则编译失败。这是新人最常遇到的继承报错。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">子类构造器</span><span class="code-lang">java</span></div>
+          <pre><code>public Dog(String name, int age) {
+    super(name, age);    // 必须是第一行
+}
+
+@Override
+public void speak() {
+    super.speak();       // 先执行父类逻辑
+    System.out.println(getName() + " 汪汪叫");
+}</code></pre>
+        </div>
+
+        <p>完整的初始化顺序是：<strong>父类静态块 → 子类静态块 → 父类实例块 → 父类构造器 → 子类实例块 → 子类构造器</strong>。静态块只在类第一次加载时执行一次，所以创建第二个对象时不再出现。这个顺序解释了为什么「在父类构造器里调用被子类重写的方法」是危险操作——此时子类的字段还没初始化。</p>
+
+        <div class="callout warn">
+          <span class="co-title">this() 与 super() 只能选一个</span>
+          <p>两者都要求写在构造器第一行，所以同一个构造器里不可能同时出现。如果一组构造器既想复用本类逻辑又需要调父类，只能在「最底层的那个构造器」里调 super。</p>
+        </div>
+
+        <h2 id="modifier"><span class="h2-num">9.3</span>权限修饰符：继承中的边界</h2>
+        <p class="h2-sub">protected 是专为继承设计的，但滥用它会破坏封装。</p>
+
+        <p>四种修饰符的可见范围在上一章已经列过。放到继承场景里，需要特别记住两条：<strong>private 成员不被继承</strong>（虽然对象里存在），<strong>默认修饰符的成员跨包时连子类也访问不到</strong>（这一点常被误认为 protected 的行为）。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>父类成员修饰符</th><th>子类是否继承</th><th>子类能否直接访问</th></tr></thead>
+            <tbody>
+              <tr><td><code>public</code></td><td>继承</td><td>能</td></tr>
+              <tr><td><code>protected</code></td><td>继承</td><td>能（跨包也可以）</td></tr>
+              <tr><td>默认（同包）</td><td>同包子类继承</td><td>同包能，跨包不能</td></tr>
+              <tr><td><code>private</code></td><td>不继承</td><td>不能，只能通过 getter</td></tr>
+              <tr><td><code>static</code> 方法</td><td>被隐藏而非重写</td><td>能，但不参与多态</td></tr>
+              <tr><td><code>final</code> 方法</td><td>继承</td><td>不能重写</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>实践建议是：字段一律 private，通过 protected 或 public 的方法给子类访问能力。直接把字段设为 protected 看似方便，实则让子类可以随意修改父类状态，父类再也无法保证自己的不变式——这是封装被破坏的典型场景。</p>
+
+        <h2 id="polymorphism"><span class="h2-num">9.4</span>多态：同一个调用，不同实现</h2>
+        <p class="h2-sub">编译时看左边，运行时看右边。</p>
+
+        <p>多态需要三个条件同时满足：<strong>有继承关系、子类重写了父类方法、父类引用指向子类对象</strong>。三者缺一不可——少了重写，调用的还是父类实现；少了父类引用，就没有「统一入口」。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">多态的最小示例</span><span class="code-lang">java</span></div>
+          <pre><code>Animal a1 = new Dog("旺财", 3);
+Animal a2 = new Cat("咪咪", 2);
+
+a1.speak();    // 旺财 汪汪叫
+a2.speak();    // 咪咪 喵喵叫
+
+// 统一处理，新增类型不用改这段代码
+for (Animal a : new Animal[]{a1, a2}) a.eat();</code></pre>
+        </div>
+
+        <p>它的价值在于<strong>解耦</strong>。写 <code>feed(Animal animal)</code> 时，你不需要知道将来会有多少种动物；新增一个 Bird 类，这个方法一行都不用改。这就是「对扩展开放、对修改关闭」的开闭原则，也是框架能用一套代码调度无数业务实现的原因。</p>
+
+        <p>但多态不是万能的。有三类成员<strong>不参与</strong>动态绑定：<strong>成员变量</strong>（按编译期类型解析）、<strong>静态方法</strong>（属于类，不随对象变）、<strong>private 方法</strong>（不可重写）。所以 <code>a1.age</code> 取到的是父类的字段，即使子类也定义了同名 age。</p>
+
+        <div class="callout info">
+          <span class="co-title">动态绑定是怎么实现的</span>
+          <p>每个对象头里保存着指向自己类元数据的指针，类元数据里有一张「虚方法表」，记录了每个可重写方法的实际入口。调用实例方法时，JVM 顺着这张表找到真实实现，因此运行期才知道该执行谁的代码。</p>
+        </div>
+
+        <h2 id="cast"><span class="h2-num">9.5</span>向上与向下转型</h2>
+        <p class="h2-sub">向上自动且安全，向下必须确认身份。</p>
+
+        <p><strong>向上转型</strong>是把子类对象赋给父类引用，自动完成、绝对安全，代价是「看不到子类特有的方法」——因为编译器只认父类类型。<strong>向下转型</strong>是把父类引用转回子类类型，必须强制转换，且只有对象的真实类型匹配时才成功。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">转型与异常</span><span class="code-lang">java</span></div>
+          <pre><code>Animal a = new Dog("旺财", 3);
+// a.guard();                 // 编译错误：Animal 没有 guard
+
+Dog d = (Dog) a;              // 向下转型，成功
+d.guard();
+
+Animal cat = new Cat("咪咪", 2);
+Dog wrong = (Dog) cat;        // ClassCastException</code></pre>
+        </div>
+
+        <p>为什么需要向上转型？因为它让方法参数、集合、返回值都能面向抽象编写。<code>List&lt;Animal&gt;</code> 可以装任何子类，调用方不需要为每种动物写一个重载方法。这是「面向接口/父类编程」的具体体现。</p>
+
+        <h2 id="instanceof"><span class="h2-num">9.6</span>instanceof 与 final</h2>
+        <p class="h2-sub">转型前先验身份，扩展前先想清楚要不要封死。</p>
+
+        <p><code>instanceof</code> 用来判断对象的<strong>真实类型</strong>是否是某个类（或其子类）。它对 null 永远返回 false，不会抛异常，所以在转型前用它做保护是最安全的做法。Java 16 之后支持模式匹配：<code>if (a instanceof Cat c)</code> 一步完成判断与绑定，省掉重复强转。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">模式匹配</span><span class="code-lang">java</span></div>
+          <pre><code>for (Animal a : animals) {
+    if (a instanceof Dog d) d.guard();
+    else if (a instanceof Cat c) c.catchMouse();
+}</code></pre>
+        </div>
+
+        <p><code>final</code> 有三种用法，含义各不相同：修饰变量表示只能赋值一次；修饰方法表示不能被子类重写；修饰类表示不能被继承。String、Integer 都是 final 类，目的就是保证不可变性与行为不被篡改。</p>
+
+        <p>一个常见误解：<code>final List&lt;String&gt; list = new ArrayList&lt;&gt;();</code> 之后仍然可以 <code>list.add("a")</code>。final 锁住的是「引用不再指向别的对象」，而不是对象内部状态。想要真正不可变，需要用 <code>Collections.unmodifiableList()</code> 或 <code>List.of()</code>。</p>
+
+        <hr>
+
+        <h2 id="summary"><span class="h2-num">小结</span>这一章真正要记住的</h2>
+        <div class="summary">
+          <h4>Key takeaways</h4>
+          <ol>
+            <li><strong>继承表达 is-a，has-a 应该用组合。</strong> Java 只支持单继承，避免二义性。</li>
+            <li><strong>重写要求同名同参、权限不变小、返回值兼容。</strong> 永远加 @Override 让编译器检查。</li>
+            <li><strong>子类构造器必须先调父类构造器。</strong> 顺序：父静态 → 子静态 → 父实例 → 父构造 → 子实例 → 子构造。</li>
+            <li><strong>protected 是给继承用的，但字段仍应 private + 方法暴露。</strong></li>
+            <li><strong>多态三前提：继承、重写、父类引用指向子类对象。</strong> 成员变量、静态方法、private 方法不参与多态。</li>
+            <li><strong>向上转型自动安全，向下转型必须先用 instanceof 验类型。</strong></li>
+            <li><strong>final 修饰变量锁引用、修饰方法禁重写、修饰类禁继承。</strong> 它不保证对象内容不可变。</li>
+          </ol>
+        </div>
+
+        <h2 id="quiz"><span class="h2-num">自测</span>检查一下你真的懂了吗</h2>
+        <div class="quiz">
+          <details>
+            <summary>Java 支持多继承吗？接口呢？为什么这么设计？</summary>
+            <div class="answer">类只支持单继承，避免菱形继承时同名成员产生二义性；接口支持多实现，因为接口方法默认是抽象的，冲突时由实现类显式指定。</div>
+          </details>
+          <details>
+            <summary>子类构造器为什么必须先调用父类构造器？不写 super() 会怎样？</summary>
+            <div class="answer">子类对象包含父类部分，必须先完成父类初始化。不写时编译器自动插入无参 super()；若父类没有无参构造器就编译失败，必须显式调 super(参数)。</div>
+          </details>
+          <details>
+            <summary><code>Animal a = new Dog(); a.speak();</code> 执行哪个 speak？如果 Dog 没重写呢？</summary>
+            <div class="answer">重写了就执行 Dog 的版本；没重写则继承父类实现，执行 Animal 的 speak。绑定发生在运行期，看堆中真实对象类型。</div>
+          </details>
+          <details>
+            <summary>什么情况下向下转型会抛 ClassCastException？怎么避免？</summary>
+            <div class="answer">对象真实类型不是目标类型（或其子类）时强转会抛。避免方式：先用 instanceof 判断，或用 Java 16+ 的模式匹配一步完成。</div>
+          </details>
+          <details>
+            <summary>为什么成员变量不参与多态？</summary>
+            <div class="answer">字段访问在编译期就按变量声明类型解析，没有虚方法表机制。所以 <code>Animal a = new Dog()</code> 中 <code>a.age</code> 取的是 Animal 定义的字段，即使 Dog 也声明了同名 age。</div>
+          </details>
+        </div>
+
+        <div class="chapter-cta">
+          <div class="txt">
+            <strong>本章结束</strong>
+            <span>标记后进度会保存在本地，下次打开自动恢复。</span>
+          </div>
+          <button class="btn btn-primary" id="markDone" type="button"></button>
+        </div>
+
+        <nav class="chapter-nav">
+          <a href="ch08.html">
+            <span class="dir">← 上一章</span>
+            <span class="ttl">08 · 类与对象</span>
+          </a>
+          <a class="next" href="ch10.html">
+            <span class="dir">下一章 →</span>
+            <span class="ttl">10 · 抽象、接口与内部类</span>
+          </a>
+        </nav>
+
+      </article>
+      <aside class="toc" data-toc></aside>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Java 学习手册 · 第 09 章</span>
+    <a href="../index.html#chapters">← 返回章节目录</a>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="回到顶部">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script src="../assets/js/data.js?v=20261111b"></script>
+<script src="../assets/js/site.js?v=20261111b"></script>
+</body>
+</html>

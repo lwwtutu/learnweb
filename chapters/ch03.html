@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 03 章 · 运算符与方法 | Java 学习手册</title>
+<meta name="description" content="算术、赋值、关系、逻辑、三元与位运算符的原理与陷阱，方法定义、重载、值传递，Scanner 键盘录入。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<script>try{(function(){var a=JSON.parse(localStorage.getItem("java-appearance")||"null");if(!a)return;var r=document.documentElement,m={theme:"theme",ink:"ink",codeBg:"code-bg",codeInk:"code-ink",font:"font",leading:"leading",width:"width"};for(var k in m){var v=a[k];if(!v||(k==="ink"&&v==="auto"))continue;r.setAttribute("data-"+m[k],v);}})()}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/main.css?v=20261111b">
+</head>
+<body data-root="../" data-page="ch03">
+
+<div class="readbar"></div>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" data-menu aria-label="打开目录">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="../index.html">
+    <span class="brand-mark">J</span>
+    <span class="brand-text">
+      <span class="brand-name">Java 学习手册</span>
+      <span class="brand-sub">JavaSE · 12 chapters</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="../index.html">首页</a>
+    <a href="../index.html#chapters" class="active">章节目录</a>
+    <a href="../index.html#path">学习路径</a>
+    <a href="../index.html#tips">学习建议</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <button class="search-trigger" data-search-open>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <span>搜索知识点…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+  <div class="progress-pill" data-progress-pill></div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <div class="doc-with-toc">
+      <article class="doc">
+
+        <header class="chapter-head">
+          <span class="kicker">第 03 章 · 语法地基</span>
+          <h1>运算符与方法： <em>从「能存」到「能算」</em></h1>
+          <p class="lede">运算符决定了表达式怎么算，方法决定了逻辑怎么拆。这一章不追求把所有符号列一遍，而是把最容易出错的几个点讲透：整数除法、取模符号、自增时机、短路求值、参数传递，以及「为什么要有方法」。</p>
+          <div class="meta-row">
+            <span class="meta-chip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>约 <b>55 分钟</b></span>
+            <span class="meta-chip">8 个知识点</span>
+            <span class="meta-chip">4 个易错专题</span>
+            <span class="meta-chip">前置：第 02 章</span>
+          </div>
+        </header>
+
+        <div class="objectives">
+          <h4>学完这一章，你应该能够</h4>
+          <ul>
+            <li>预测整数除法与取模的结果</li>
+            <li>说清 ++i 与 i++ 的求值时机</li>
+            <li>利用短路求值避免空指针</li>
+            <li>知道位运算适合解决什么问题</li>
+            <li>独立设计并调用一个方法</li>
+            <li>解释 Java 为什么只有值传递</li>
+            <li>用 Scanner 写出交互程序</li>
+          </ul>
+        </div>
+
+        <h2 id="arithmetic"><span class="h2-num">3.1</span>算术运算符：两个结果由类型决定</h2>
+        <p class="h2-sub">同样的除法，操作数类型不同，结果可能差很远。</p>
+
+        <p>加减乘除没什么好说的，Java 的坑集中在两处。<strong>第一，整数除法直接截断</strong>：<code>7 / 2</code> 得 3 而不是 3.5，因为两边都是 int，编译器不会「猜」你想要小数。想得到 3.5，必须让至少一边是浮点。<strong>第二，取模结果的符号跟随被除数</strong>：<code>-7 % 3</code> 是 -1，<code>7 % -3</code> 是 1，这跟数学里「余数总为正」的直觉不同。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">除法与取模</span><span class="code-lang">java</span></div>
+          <pre><code>System.out.println(7 / 2);          // 3
+System.out.println(7 / 2.0);        // 3.5
+System.out.println(-7 % 3);         // -1
+System.out.println(7 % -3);         // 1
+System.out.println(1.0 / 0);        // Infinity，不抛异常</code></pre>
+        </div>
+
+        <p>这个特性在写业务代码时非常危险。计算百分比时如果先做整数除法，会得到 0：<code>1 / 2 * 100</code> 是 0，正确写法是 <code>1 * 100 / 2</code> 或 <code>1.0 / 2 * 100</code>。计算平均值、打折价、及格率时都要先检查这一点。</p>
+
+        <p>另一个细节是 <code>+</code> 的双重身份：两边都是数值时做加法，只要有一边是字符串就变成拼接。<code>"结果：" + 1 + 2</code> 得到「结果：12」，而 <code>"结果：" + (1 + 2)</code> 才是「结果：3」——因为从左到右依次计算，一旦遇到字符串，后面全部按字符串处理。</p>
+
+        <h2 id="assign"><span class="h2-num">3.2</span>赋值与自增：两个隐藏的转换</h2>
+        <p class="h2-sub">+= 自带强转，++ 的前后位置决定取值时机。</p>
+
+        <p>复合赋值运算符 <code>+=</code>、<code>-=</code>、<code>*=</code> 看起来只是简写，其实额外做了一件事：<strong>隐含强制类型转换</strong>。所以 <code>byte b = 10; b += 5;</code> 能通过编译，而 <code>b = b + 5;</code> 不行——前者等价于 <code>b = (byte)(b + 5)</code>。</p>
+
+        <p>自增自减的坑在于「什么时候取值」。<code>i++</code> 是<strong>先取当前值参与运算，再自增</strong>；<code>++i</code> 是<strong>先自增，再取值参与运算</strong>。单独成行时两者没区别，一旦嵌进表达式，结果就不同了。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">自增的求值时机</span><span class="code-lang">java</span></div>
+          <pre><code>int i = 5;
+int m = i++;    // m = 5，之后 i = 6
+int n = ++i;    // i 先变 7，n = 7
+
+int j = 1;
+j = j++;        // 陷阱：先把 1 暂存，j 变 2，又把 1 赋回
+System.out.println(j);   // 1</code></pre>
+        </div>
+
+        <p>面试喜欢考 <code>i++ + ++i</code> 这类题，但工程上应当<strong>禁止把自增写在复杂表达式里</strong>。可读性差、容易出错，拆成两行不会有任何性能损失。</p>
+
+        <h2 id="logic"><span class="h2-num">3.3</span>关系与逻辑：短路是安全网</h2>
+        <p class="h2-sub">&amp;&amp; 和 &amp; 的差别不只是效率，而是会不会崩。</p>
+
+        <p>关系运算符的结果一定是 boolean，这没什么可讲的。逻辑运算符里真正重要的是<strong>短路</strong>：<code>&amp;&amp;</code> 左边为 false 时不计算右边，<code>||</code> 左边为 true 时不计算右边；而 <code>&amp;</code> 和 <code>|</code> 无论左边如何都会算完两边。</p>
+
+        <p>这个特性被广泛用于防御性判断。判断字符串是否为空时，必须先判 null 再调方法，否则 null 调用 <code>.equals()</code> 或 <code>.length()</code> 会直接抛空指针。<strong>短路让「先判空、再使用」成为可能</strong>。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">短路与常量前置</span><span class="code-lang">java</span></div>
+          <pre><code>String user = null;
+
+// 左边为 false，右边不会执行，因此不会 NPE
+if (user != null &amp;&amp; user.length() &gt; 3) { ... }
+
+// 常量前置：即使 user 为 null 也不会崩
+System.out.println("admin".equals(user));</code></pre>
+        </div>
+
+        <p>还有一个必须养成的习惯：比较两个字符串内容时写成 <code>"admin".equals(user)</code> 而不是 <code>user.equals("admin")</code>。前者在 user 为 null 时返回 false，后者会抛异常。这条规则叫「常量前置」，能省掉大量判空代码。</p>
+
+        <h2 id="ternary"><span class="h2-num">3.4</span>三元与位运算：两个特定场景的工具</h2>
+        <p class="h2-sub">三元是 if 的表达式版，位运算直接操作二进制。</p>
+
+        <p>三元运算符 <code>条件 ? 值1 : 值2</code> 的价值在于<strong>它返回一个值</strong>，可以直接赋给变量或作为参数，而 if 是语句，不能这样用。简单的二选一赋值用三元更紧凑，但嵌套超过两层就该改回 if，否则可读性会急剧下降。</p>
+
+        <p>位运算在日常业务里出现频率不高，但在三种场景中无可替代：<strong>权限标记</strong>（用二进制位表示读、写、执行）、<strong>状态压缩</strong>（一个 int 存 32 个开关）、<strong>性能敏感的计算</strong>（左移 1 位等于乘 2）。理解 <code>&amp;</code> 与 <code>|</code> 在二进制层面的含义，这些用法就自然懂了。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">用位运算表示权限</span><span class="code-lang">java</span></div>
+          <pre><code>final int READ = 1;      // 0001
+final int WRITE = 2;     // 0010
+final int EXEC = 4;      // 0100
+
+int permission = READ | WRITE;              // 0011
+boolean canRead = (permission &amp; READ) != 0;   // true
+boolean canExec = (permission &amp; EXEC) != 0;   // false</code></pre>
+        </div>
+
+        <p>右移分两种：<code>&gt;&gt;</code> 是算术右移，左边补符号位，负数移位后还是负数；<code>&gt;&gt;&gt;</code> 是逻辑右移，左边一律补 0，负数会被移成一个很大的正数。这个区别在处理哈希值、二进制协议时很关键。</p>
+
+        <h2 id="priority"><span class="h2-num">3.5</span>优先级：不需要背，需要加括号</h2>
+        <p class="h2-sub">记住三条主线，其余靠括号表达意图。</p>
+
+        <p>Java 的优先级有十几级，全背下来性价比极低。实际需要记住的只有三条：<strong>算术 &gt; 关系 &gt; 逻辑 &gt; 赋值</strong>；<code>&amp;&amp;</code> 优先级高于 <code>||</code>；赋值结合性从右向左，所以 <code>a = b = c</code> 合法。</p>
+
+        <p>最容易被误读的是 <code>2 + 3 + "x" + 4 + 5</code>，结果是 <code>5x45</code> 而不是 <code>5x9</code>——因为 + 是左结合的，先算完 2+3，遇到字符串后全部转为拼接。遇到这类表达式，<strong>加括号不是能力不足，而是专业素养</strong>：代码是给人读的，编译器不在乎你怎么写。</p>
+
+        <h2 id="method"><span class="h2-num">3.6</span>方法：把逻辑切成可复用的块</h2>
+        <p class="h2-sub">方法的本质是「命名 + 参数 + 返回值」三件事的封装。</p>
+
+        <p>没有方法时，同样的逻辑要在多处复制粘贴；改一处就得改十处，漏一处就出 bug。方法解决三个问题：<strong>复用</strong>（写一次调多次）、<strong>抽象</strong>（调用方只需知道「做什么」，不必关心「怎么做」）、<strong>可测试</strong>（输入输出明确，能单独验证）。</p>
+
+        <div class="concept">
+          <span class="co-label">方法签名</span>
+          <p>方法签名 = 方法名 + 参数列表（类型、个数、顺序）。返回类型和参数名<strong>不属于</strong>签名。这解释了为什么重载不能只靠返回值区分，也解释了编译器如何决定调用哪个方法。</p>
+        </div>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">方法的四个组成部分</span><span class="code-lang">java</span></div>
+          <pre><code>public static int add(int a, int b) {
+    return a + b;
+}
+// public static  —— 修饰符：谁能调用、属于类还是对象
+// int            —— 返回值类型，void 表示不返回
+// add            —— 方法名，动词开头，小驼峰
+// (int a, int b) —— 形参列表，调用时传入实参</code></pre>
+        </div>
+
+        <p>两个规范值得从第一天就遵守。<strong>一是方法只做一件事</strong>：名字里出现「和」「并且」时，通常该拆成两个方法。<strong>二是所有分支都要有返回值</strong>：有返回值的方法，每条执行路径都必须 return，否则编译不通过——这不是啰嗦，而是强迫你想清楚每种情况。</p>
+
+        <h2 id="overload"><span class="h2-num">3.7</span>重载与参数传递</h2>
+        <p class="h2-sub">重载看参数，传参只看值。</p>
+
+        <p><strong>重载</strong>允许同一个类里有多个同名方法，只要参数列表不同。编译器在<strong>编译期</strong>就根据实参的类型和个数选定调用哪个版本，这叫静态绑定。所以重载与多态无关，与返回值也无关。</p>
+
+        <p>参数传递更容易误解。Java 里<strong>只有值传递</strong>：基本类型传的是值的副本，引用类型传的是地址的副本。这带来两个可预期的结果——改基本类型不影响原变量；通过引用改对象内容会影响原对象，但让引用指向新对象不会。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">值传递的两种表现</span><span class="code-lang">java</span></div>
+          <pre><code>static void change(int n) { n = 100; }             // 改不动原值
+static void modify(int[] a) { a[0] = 99; }         // 改得动内容
+static void reassign(int[] a) { a = new int[]{7}; } // 改不动引用
+
+int x = 10; change(x);          // x 仍是 10
+int[] arr = {1,2,3}; modify(arr);   // arr[0] = 99
+reassign(arr);                  // arr 仍指向原数组</code></pre>
+        </div>
+
+        <div class="callout tip">
+          <span class="co-title">为什么理解这点很重要</span>
+          <p>它决定了你写方法时的接口设计：想「修改调用方的变量」，就不能靠传基本类型，要么返回新值，要么传入可变对象（数组、集合、自定义对象）。这也是为什么工具类方法通常返回结果而不是改参数。</p>
+        </div>
+
+        <h2 id="scanner"><span class="h2-num">3.8</span>Scanner：让程序能对话</h2>
+        <p class="h2-sub">交互式程序的入口，但有两个必须知道的坑。</p>
+
+        <p><code>Scanner</code> 包装了标准输入流，提供 <code>nextInt()</code>、<code>nextDouble()</code>、<code>nextLine()</code> 等方法按类型读取。它的工作方式是「跳过空白、读取一个 token」，理解这一点才能解释下面两个问题。</p>
+
+        <p><strong>坑一：nextInt 后接 nextLine 会读到空串。</strong> 因为 nextInt 只读走数字，行尾的换行符还留在缓冲区，nextLine 一看到换行就直接返回空字符串。<strong>坑二：输入格式不对会抛异常。</strong> 用户输入字母而你调 nextInt，会抛 <code>InputMismatchException</code>；生产代码里要么先校验，要么统一用 nextLine 读整行再解析。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">读取姓名与年龄</span><span class="code-lang">java</span></div>
+          <pre><code>Scanner sc = new Scanner(System.in);
+System.out.print("姓名：");
+String name = sc.nextLine();
+System.out.print("年龄：");
+int age = Integer.parseInt(sc.nextLine());   // 统一按行读，再解析
+sc.close();</code></pre>
+        </div>
+
+        <p>注意最后要 <code>close()</code> 释放资源。在真实项目里，Scanner 更多用于教学和命令行工具；Web 应用的输入来自 HTTP 请求参数，但「读取 → 校验 → 转换」这套思路是完全一致的。</p>
+
+        <hr>
+
+        <h2 id="summary"><span class="h2-num">小结</span>这一章真正要记住的</h2>
+        <div class="summary">
+          <h4>Key takeaways</h4>
+          <ol>
+            <li><strong>整数除法截断、取模符号跟随被除数。</strong> 算比例时先乘后除，或提前转成浮点。</li>
+            <li><strong>+= 隐含强制转换，++ 的位置决定取值时机。</strong> 不要把自增塞进复杂表达式。</li>
+            <li><strong>&amp;&amp; 短路是防御性编程的基础。</strong> 「先判空再使用」和「常量前置」能消掉大半空指针。</li>
+            <li><strong>三元返回一个值，if 只是一条语句。</strong> 二选一赋值用三元，超过两层嵌套改回 if。</li>
+            <li><strong>优先级不必背，括号表达意图。</strong> 记住「算术 &gt; 关系 &gt; 逻辑 &gt; 赋值」即可。</li>
+            <li><strong>方法签名 = 名字 + 参数列表。</strong> 重载靠它区分，与返回值无关。</li>
+            <li><strong>Java 只有值传递。</strong> 引用类型传的是地址副本，能改内容、改不了指向。</li>
+            <li><strong>Scanner 按 token 读取，nextInt 后要处理换行。</strong> 统一用 nextLine + 解析更稳。</li>
+          </ol>
+        </div>
+
+        <h2 id="quiz"><span class="h2-num">自测</span>检查一下你真的懂了吗</h2>
+        <div class="quiz">
+          <details>
+            <summary><code>7 % -3</code> 和 <code>-7 % 3</code> 分别等于多少？</summary>
+            <div class="answer">1 和 -1。取模结果的符号跟随被除数（左边的数）。</div>
+          </details>
+          <details>
+            <summary><code>int i = 5; int r = i++ + ++i;</code> 执行后 i 和 r 是多少？</summary>
+            <div class="answer">i = 7，r = 12。i++ 先取 5（i 变 6），++i 先自增到 7 再取值，5 + 7 = 12。</div>
+          </details>
+          <details>
+            <summary>为什么推荐 <code>"admin".equals(user)</code> 而不是 <code>user.equals("admin")</code>？</summary>
+            <div class="answer">user 为 null 时，后者会抛 NullPointerException，前者不会。这叫「常量前置」写法，配合 &amp;&amp; 短路可以让判空逻辑更简洁。</div>
+          </details>
+          <details>
+            <summary>方法重载能不能只靠返回值类型区分？为什么？</summary>
+            <div class="answer">不能。调用 <code>sum(1, 2)</code> 时编译器无法从上下文推断你期望的返回类型，所以重载必须参数列表不同。签名不包含返回值。</div>
+          </details>
+          <details>
+            <summary>把数组传进方法修改元素，调用方能看到变化吗？把方法内的引用改为新数组呢？</summary>
+            <div class="answer">改元素能看到——两个引用指向同一堆对象；改成新数组看不到——那只是局部变量（地址副本）重新指向，原引用未变。</div>
+          </details>
+        </div>
+
+        <div class="chapter-cta">
+          <div class="txt">
+            <strong>本章结束</strong>
+            <span>标记后进度会保存在本地，下次打开自动恢复。</span>
+          </div>
+          <button class="btn btn-primary" id="markDone" type="button"></button>
+        </div>
+
+        <nav class="chapter-nav">
+          <a href="ch02.html">
+            <span class="dir">← 上一章</span>
+            <span class="ttl">02 · 基础语法</span>
+          </a>
+          <a class="next" href="ch04.html">
+            <span class="dir">下一章 →</span>
+            <span class="ttl">04 · 程序流程控制</span>
+          </a>
+        </nav>
+
+      </article>
+      <aside class="toc" data-toc></aside>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Java 学习手册 · 第 03 章</span>
+    <a href="../index.html#chapters">← 返回章节目录</a>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="回到顶部">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script src="../assets/js/data.js?v=20261111b"></script>
+<script src="../assets/js/site.js?v=20261111b"></script>
+</body>
+</html>

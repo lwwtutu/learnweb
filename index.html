@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Java 学习手册 · 从零到项目实战</title>
+<meta name="description" content="一套完整的 JavaSE 学习路线：12 个章节、70+ 知识点，从环境搭建到石头迷阵项目实战，配套代码示例与自测题。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<script>try{(function(){var a=JSON.parse(localStorage.getItem("java-appearance")||"null");if(!a)return;var r=document.documentElement,m={theme:"theme",ink:"ink",codeBg:"code-bg",codeInk:"code-ink",font:"font",leading:"leading",width:"width"};for(var k in m){var v=a[k];if(!v||(k==="ink"&&v==="auto"))continue;r.setAttribute("data-"+m[k],v);}})()}catch(e){}</script>
+<link rel="stylesheet" href="assets/css/main.css?v=20261111b">
+</head>
+<body data-root="./" data-page="home">
+
+<div class="readbar"></div>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" data-menu aria-label="打开目录">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">J</span>
+    <span class="brand-text">
+      <span class="brand-name">Java 学习手册</span>
+      <span class="brand-sub">JavaSE · 12 chapters</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="index.html" class="active">首页</a>
+    <a href="index.html#chapters">章节目录</a>
+    <a href="index.html#path">学习路径</a>
+    <a href="index.html#tips">学习建议</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <button class="search-trigger" data-search-open>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <span>搜索知识点…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+  <div class="progress-pill" data-progress-pill></div>
+</header>
+
+<main class="home">
+
+  <!-- ================= HERO ================= -->
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-inner">
+      <div>
+        <div class="hero-badge"><i>JavaSE</i> 零基础 → 项目实战 · 12 章完整路线</div>
+        <h1>把 Java 学成<br><span class="hl">真正会用的样子</span></h1>
+        <p class="sub">不是把语法背一遍，而是按「知识点 → 可运行代码 → 易错点 → 自测」的节奏推进。每章都有完整示例，学完就能写出能跑的程序。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="chapters/ch01.html">
+            从第 1 章开始
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#chapters">浏览全部章节</a>
+          <span class="note">建议每天 1–2 章，两周走完</span>
+        </div>
+        <div class="hero-stats" data-mount="stats"></div>
+      </div>
+
+      <div class="hero-code">
+        <div class="code-card">
+          <div class="code-head">
+            <span class="code-dots"><i></i><i></i><i></i></span>
+            <span class="code-file">HelloJava.java</span>
+            <span class="code-lang">java</span>
+          </div>
+          <pre><code>public class HelloJava {
+    public static void main(String[] args) {
+        // 从第一个程序，一步步走到项目实战
+        String[] roadmap = {
+            "语法地基", "数组与字符串",
+            "面向对象", "项目实战"
+        };
+
+        for (int i = 0; i &lt; roadmap.length; i++) {
+            System.out.println((i + 1) + ". " + roadmap[i]);
+        }
+    }
+}</code></pre>
+        </div>
+        <div class="hero-float"><span class="dot"></span>12 章 · 82 个知识点已就绪</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 章节 ================= -->
+  <section class="section-block" id="chapters">
+    <div class="section-head">
+      <div>
+        <h2>章节目录</h2>
+        <p>按知识依赖顺序编排：先语法、再容器、后面向对象，最后用一个完整项目收口。</p>
+      </div>
+      <div class="aside">已学完 <b data-done-count>0</b> / 12 章</div>
+    </div>
+    <div class="chapter-grid" data-mount="chapters"></div>
+  </section>
+
+  <!-- ================= 学习路径 ================= -->
+  <section class="section-block" id="path" style="margin-top:56px">
+    <div class="section-head">
+      <div>
+        <h2>四段式学习路径</h2>
+        <p>每一段都有明确的能力目标，学完能做什么，比学了多少更重要。</p>
+      </div>
+    </div>
+    <div class="path" data-mount="path"></div>
+  </section>
+
+  <!-- ================= 学习建议 ================= -->
+  <section class="section-block" id="tips" style="margin-top:56px">
+    <div class="section-head">
+      <div>
+        <h2>怎么学才有效</h2>
+        <p>三条被反复验证过的建议，能帮你少走至少一半的弯路。</p>
+      </div>
+    </div>
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="ico" style="background:var(--java-soft);color:var(--java)">✎</div>
+        <h4>代码一定要自己敲</h4>
+        <p>看懂和写出来是两件事。每个示例都在本地跑一遍，改几个值观察输出变化，比读十遍笔记更有效。</p>
+      </div>
+      <div class="tip-card">
+        <div class="ico" style="background:var(--blue-soft);color:var(--blue)">◎</div>
+        <h4>先跑通，再追问为什么</h4>
+        <p>遇到报错先读异常栈：异常类型在前、出错行号在后。搞不清就回到本章「易错点」，90% 的坑都写过。</p>
+      </div>
+      <div class="tip-card">
+        <div class="ico" style="background:var(--green-soft);color:var(--green)">✓</div>
+        <h4>用项目检验掌握程度</h4>
+        <p>每学完一段，试着不看答案复写小项目：成绩管理、图书查询、石头迷阵。能独立完成才算真的会。</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Java 学习手册 · 基于 JavaSE 基础课程笔记与示例代码整理</span>
+    <span>建议 JDK 17+ · <a href="#chapters">回到章节目录</a></span>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="回到顶部">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script src="assets/js/data.js?v=20261111b"></script>
+<script src="assets/js/site.js?v=20261111b"></script>
+</body>
+</html>

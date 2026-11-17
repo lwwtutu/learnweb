@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 07 章 · 包装类与 Object | Java 学习手册</title>
+<meta name="description" content="包装类的设计动机、装箱拆箱、Integer 缓存机制、拆箱 NPE、BigDecimal、Character、Object 的方法契约与 equals/hashCode 重写。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<script>try{(function(){var a=JSON.parse(localStorage.getItem("java-appearance")||"null");if(!a)return;var r=document.documentElement,m={theme:"theme",ink:"ink",codeBg:"code-bg",codeInk:"code-ink",font:"font",leading:"leading",width:"width"};for(var k in m){var v=a[k];if(!v||(k==="ink"&&v==="auto"))continue;r.setAttribute("data-"+m[k],v);}})()}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/main.css?v=20261111b">
+</head>
+<body data-root="../" data-page="ch07">
+
+<div class="readbar"></div>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" data-menu aria-label="打开目录">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="../index.html">
+    <span class="brand-mark">J</span>
+    <span class="brand-text">
+      <span class="brand-name">Java 学习手册</span>
+      <span class="brand-sub">JavaSE · 12 chapters</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="../index.html">首页</a>
+    <a href="../index.html#chapters" class="active">章节目录</a>
+    <a href="../index.html#path">学习路径</a>
+    <a href="../index.html#tips">学习建议</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <button class="search-trigger" data-search-open>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <span>搜索知识点…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+  <div class="progress-pill" data-progress-pill></div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <div class="doc-with-toc">
+      <article class="doc">
+
+        <header class="chapter-head">
+          <span class="kicker">第 07 章 · 数据容器</span>
+          <h1>包装类与 Object： <em>基本类型的对象形态</em></h1>
+          <p class="lede">泛型不能写 int，集合不能存 8 种基本类型，null 也无法用 int 表示——于是有了包装类。自动装箱让你写得爽，但缓存、空指针、== 比较这三个坑，几乎每个 Java 程序员都栽过。</p>
+          <div class="meta-row">
+            <span class="meta-chip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>约 <b>60 分钟</b></span>
+            <span class="meta-chip">6 个知识点</span>
+            <span class="meta-chip">3 个面试高频点</span>
+            <span class="meta-chip">前置：第 06 章</span>
+          </div>
+        </header>
+
+        <div class="objectives">
+          <h4>学完这一章，你应该能够</h4>
+          <ul>
+            <li>说清包装类存在的三个理由</li>
+            <li>解释装箱与拆箱底层调用了什么</li>
+            <li>用缓存机制解释 127 与 128 的差异</li>
+            <li>识别自动拆箱引发的空指针</li>
+            <li>正确重写 equals 与 hashCode</li>
+            <li>知道什么时候必须用 BigDecimal</li>
+          </ul>
+        </div>
+
+        <h2 id="wrapper"><span class="h2-num">7.1</span>为什么需要包装类</h2>
+        <p class="h2-sub">Java 是「面向对象」的语言，但基本类型不是对象。</p>
+
+        <p>这个矛盾在三个地方暴露得很明显。<strong>第一，泛型和集合只接受对象</strong>：<code>List&lt;int&gt;</code> 编译不过，必须写 <code>List&lt;Integer&gt;</code>，因为泛型在编译后会类型擦除，底层统一按 Object 处理。<strong>第二，有些业务需要「没有值」</strong>：数据库里一个字段可能是空，int 无法表达「空」，只能用 Integer 的 null。<strong>第三，需要对象提供的方法</strong>：把字符串转成数字、求最大值、转二进制，这些方法都挂在包装类上。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>基本类型</th><th>包装类</th><th>父类</th><th>常用能力</th></tr></thead>
+            <tbody>
+              <tr><td><code>byte</code> / <code>short</code></td><td><code>Byte</code> / <code>Short</code></td><td>Number</td><td>parseByte、valueOf</td></tr>
+              <tr><td><code>int</code></td><td><code>Integer</code></td><td>Number</td><td>parseInt、toBinaryString、MAX_VALUE</td></tr>
+              <tr><td><code>long</code> / <code>float</code> / <code>double</code></td><td><code>Long</code> / <code>Float</code> / <code>Double</code></td><td>Number</td><td>parseXxx、isNaN、isInfinite</td></tr>
+              <tr><td><code>char</code></td><td><code>Character</code></td><td>Object</td><td>isDigit、isLetter、toUpperCase</td></tr>
+              <tr><td><code>boolean</code></td><td><code>Boolean</code></td><td>Object</td><td>parseBoolean、valueOf</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>普通数值类型的包装类都继承自抽象类 <code>Number</code>，因此它们共享 <code>intValue()</code>、<code>doubleValue()</code> 这类拆箱方法。Character 和 Boolean 不参与数值体系，直接继承 Object。</p>
+
+        <h2 id="integer-cache"><span class="h2-num">7.2</span>装箱、拆箱与缓存</h2>
+        <p class="h2-sub">自动转换是语法糖，背后是 valueOf 与 xxxValue 两个方法。</p>
+
+        <p><strong>装箱</strong>是把基本类型包成对象，调用 <code>Integer.valueOf(100)</code>；<strong>拆箱</strong>是从对象取出基本值，调用 <code>intValue()</code>。Java 5 之后这两步可以自动完成，所以你写 <code>Integer i = 100;</code> 编译器会补上 <code>valueOf</code>。</p>
+
+        <p>关键在于 <code>valueOf</code> 不是简单地 new。为了减少对象创建，JDK 预先缓存了 <strong>-128 到 127</strong> 之间的所有 Integer 对象。传进去的值落在这个区间，直接返回缓存里的现成对象；超出范围才新建。这就是那个著名面试题的答案来源。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">缓存区间的影响</span><span class="code-lang">java</span></div>
+          <pre><code>Integer a = 127, b = 127;
+System.out.println(a == b);      // true，同一个缓存对象
+
+Integer c = 128, d = 128;
+System.out.println(c == d);      // false，各自 new
+System.out.println(c.equals(d)); // true，比较内容
+
+Integer e = new Integer(127);    // 强制新建，不查缓存</code></pre>
+        </div>
+
+        <p>受同样机制影响的还有 Byte、Short、Long（范围也是 -128~127）、Character（0~127）和 Boolean（TRUE/FALSE 两个常量）。但记住一个结论就够了：<strong>包装类的比较永远用 equals</strong>，不要依赖缓存区间。</p>
+
+        <div class="callout warn">
+          <span class="co-title">为什么缓存上界是 127</span>
+          <p>统计发现程序里大部分小整数都落在这个区间，缓存它们能显著减少对象创建；再往上缓存，收益下降而内存占用上升。这个值可以通过 <code>-XX:AutoBoxCacheMax</code> 调整，但业务代码不应依赖它。</p>
+        </div>
+
+        <h2 id="number"><span class="h2-num">7.3</span>类型转换与最隐蔽的空指针</h2>
+        <p class="h2-sub">自动拆箱会在你「什么都没做」的时候抛异常。</p>
+
+        <p>字符串与数值互转是日常操作。<code>Integer.parseInt("123")</code> 返回 int，<code>Integer.valueOf("123")</code> 返回 Integer；后者会走缓存，前者不会。两者在格式错误时都抛 <code>NumberFormatException</code>，传入 null 则抛 <code>NullPointerException</code>。</p>
+
+        <p>更隐蔽的问题是自动拆箱。只要发生「包装类参与算术运算」「包装类赋值给基本类型」「包装类与基本类型比较」这三种情况，编译器就会插入 <code>intValue()</code>。如果此时对象是 null，直接 NPE——代码里完全看不到任何方法调用。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">三处容易忽略的拆箱</span><span class="code-lang">java</span></div>
+          <pre><code>Integer count = null;
+int total = count;                  // NPE：拆箱
+// int sum = 1 + count;             // NPE：参与运算
+if (count &gt; 0) { }                  // NPE：与基本类型比较</code></pre>
+        </div>
+
+        <div class="callout danger">
+          <span class="co-title">金额计算必须用 BigDecimal</span>
+          <p><code>0.1 + 0.2 = 0.30000000000000004</code> 不是 bug，而是二进制浮点的固有限制。BigDecimal 用十进制表示，能精确计算；构造时必须传字符串 <code>new BigDecimal("0.1")</code>，传 double 会把误差带进去。</p>
+        </div>
+
+        <h2 id="character"><span class="h2-num">7.4</span>Character：字符的判定工具</h2>
+        <p class="h2-sub">char 是 16 位无符号整数，Character 提供了一整套分类判断。</p>
+
+        <p>因为 char 本质上就是 Unicode 码值，所以它可以直接和 int 互相转换：<code>(int) 'A'</code> 得 65，<code>(char) 65</code> 得 'A'。这个特性让「字符数字转数字」可以写成 <code>'7' - '0'</code>，比查表高效得多。</p>
+
+        <p>Character 的静态方法解决了「怎么判断一个字符是什么」这类问题：<code>isDigit</code> 判断数字、<code>isLetter</code> 判断字母（包括中文）、<code>isWhitespace</code> 判断空白、<code>isUpperCase</code> 判断大写。做输入校验、词法分析、统计字符时非常方便。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">统计字符类型</span><span class="code-lang">java</span></div>
+          <pre><code>int letters = 0, digits = 0;
+for (char ch : "Java 17".toCharArray()) {
+    if (Character.isLetter(ch)) letters++;
+    else if (Character.isDigit(ch)) digits++;
+}
+// letters = 4, digits = 2</code></pre>
+        </div>
+
+        <h2 id="object-methods"><span class="h2-num">7.5</span>Object：所有类的共同祖先</h2>
+        <p class="h2-sub">你写的每个类，都默认继承了 Object 的六个方法。</p>
+
+        <p>其中最重要的是三个：<code>toString</code> 决定对象打印出来是什么样，<code>equals</code> 决定「两个对象是否相等」，<code>hashCode</code> 决定它在哈希表中的位置。默认实现都基于地址，所以自定义类几乎都需要重写。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>方法</th><th>作用</th><th>默认行为</th></tr></thead>
+            <tbody>
+              <tr><td><code>toString()</code></td><td>返回对象的字符串表示</td><td>类名@哈希码十六进制</td></tr>
+              <tr><td><code>equals(Object)</code></td><td>判断是否相等</td><td>比较地址（等价于 ==）</td></tr>
+              <tr><td><code>hashCode()</code></td><td>返回哈希码</td><td>由内存地址推导</td></tr>
+              <tr><td><code>getClass()</code></td><td>获取运行时类</td><td>返回 Class 对象，可用于反射</td></tr>
+              <tr><td><code>clone()</code></td><td>浅拷贝</td><td>需实现 Cloneable，否则抛异常</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>为什么每个实体类都该重写 toString？因为日志、调试、字符串拼接都会隐式调用它。不重写的话，你看到的是 <code>Student@1b6d3586</code>，排查问题时毫无信息量；重写后能直接看到字段值，这是最低成本的调试优化。</p>
+
+        <p>Object 作为参数类型时还有一个妙用：它能接收任何对象（包括自动装箱后的基本类型）。泛型出现之前，集合就是这么存数据的，这也是为什么集合里取出来的东西需要强转。</p>
+
+        <h2 id="equals-hash"><span class="h2-num">7.6</span>equals 与 hashCode：必须成对重写</h2>
+        <p class="h2-sub">只重写一个，放进 HashSet 就会「存进去却找不到」。</p>
+
+        <p>契约只有一条，但必须记牢：<strong>equals 相等的两个对象，hashCode 必须相等；hashCode 相等的两个对象，equals 不一定相等</strong>（这叫哈希冲突，是允许的）。</p>
+
+        <p>为什么必须这样？因为哈希表（HashSet、HashMap）的查找分两步：先用 hashCode 算出桶的位置，再在桶内用 equals 逐个比较。如果两个「相等」的对象 hashCode 不同，它们会被放进不同的桶，第二步根本不会发生——于是 size 变成 2、contains 返回 false，逻辑彻底错乱。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">equals 的四步写法</span><span class="code-lang">java</span></div>
+          <pre><code>@Override
+public boolean equals(Object o) {
+    if (this == o) return true;                       // 1 地址相同
+    if (o == null || getClass() != o.getClass()) return false;  // 2 类型
+    User u = (User) o;                                // 3 转型
+    return id == u.id &amp;&amp; Objects.equals(name, u.name); // 4 比字段
+}
+
+@Override
+public int hashCode() { return Objects.hash(id, name); }</code></pre>
+        </div>
+
+        <p>四步的顺序不能乱：先比地址（最快的短路）、再比类型（避免强转失败）、再转型、最后逐字段比较。字段比较用 <code>Objects.equals</code> 而不是 <code>==</code>，因为它能安全处理 null。hashCode 则用 <code>Objects.hash(...)</code>，保证与 equals 使用<strong>同一组字段</strong>。</p>
+
+        <div class="callout tip">
+          <span class="co-title">实际项目怎么做</span>
+          <p>IDEA 里 <code>Alt + Insert</code> 可以一键生成，Lombok 的 <code>@Data</code> 或 <code>@EqualsAndHashCode</code> 也能自动生成。但要知道它们生成的是什么，否则遇到「为什么两个对象 equals 为 true 却查不到」时无从下手。</p>
+        </div>
+
+        <hr>
+
+        <h2 id="summary"><span class="h2-num">小结</span>这一章真正要记住的</h2>
+        <div class="summary">
+          <h4>Key takeaways</h4>
+          <ol>
+            <li><strong>包装类解决三件事：泛型/集合、表达 null、提供工具方法。</strong></li>
+            <li><strong>装箱调 valueOf，拆箱调 xxxValue。</strong> -128~127 走缓存，所以 == 在 127 上为 true、在 128 上为 false。</li>
+            <li><strong>包装类比较永远用 equals。</strong> 不要依赖缓存区间，也不要混用 new。</li>
+            <li><strong>自动拆箱是 NPE 的隐形来源。</strong> 赋值、运算、比较三处都会触发。</li>
+            <li><strong>金额用 BigDecimal，构造传字符串。</strong> double 的误差是二进制特性，不可避免。</li>
+            <li><strong>equals 与 hashCode 必须成对重写，使用同一组字段。</strong> 否则哈希表会失效。</li>
+            <li><strong>实体类重写 toString，是最便宜的调试优化。</strong></li>
+          </ol>
+        </div>
+
+        <h2 id="quiz"><span class="h2-num">自测</span>检查一下你真的懂了吗</h2>
+        <div class="quiz">
+          <details>
+            <summary>为什么 <code>List&lt;int&gt;</code> 编译不过，<code>List&lt;Integer&gt;</code> 可以？</summary>
+            <div class="answer">Java 泛型只接受引用类型，且在编译后会类型擦除、统一按 Object 处理，而基本类型不是 Object 的子类。所以必须用包装类，由自动装箱完成转换。</div>
+          </details>
+          <details>
+            <summary><code>Integer a = 127, b = 127; a == b</code> 和 <code>Integer c = 128, d = 128; c == d</code> 结果分别是什么？为什么？</summary>
+            <div class="answer">true 和 false。-128~127 在 IntegerCache 范围内，valueOf 返回同一个缓存对象；128 超出范围，每次 new 新对象。</div>
+          </details>
+          <details>
+            <summary>下面代码会抛异常吗？<code>Integer i = null; int n = i;</code></summary>
+            <div class="answer">会抛 NullPointerException。自动拆箱会调用 <code>i.intValue()</code>，而 i 不指向任何对象。</div>
+          </details>
+          <details>
+            <summary>equals 与 hashCode 的契约是什么？只重写 equals 会有什么后果？</summary>
+            <div class="answer">equals 相等则 hashCode 必须相等。只重写 equals 会导致「相等」的对象哈希值不同，在 HashSet/HashMap 中被放进不同桶，出现重复存储、contains 返回 false。</div>
+          </details>
+          <details>
+            <summary>为什么金额计算要用 BigDecimal？构造时为什么建议传字符串？</summary>
+            <div class="answer">double 用二进制浮点表示，无法精确表示 0.1 这类十进制小数，累加会产生误差；BigDecimal 用十进制表示，能精确计算。传 double 构造会把已有误差带进去，所以传字符串。</div>
+          </details>
+        </div>
+
+        <div class="chapter-cta">
+          <div class="txt">
+            <strong>本章结束</strong>
+            <span>标记后进度会保存在本地，下次打开自动恢复。</span>
+          </div>
+          <button class="btn btn-primary" id="markDone" type="button"></button>
+        </div>
+
+        <nav class="chapter-nav">
+          <a href="ch06.html">
+            <span class="dir">← 上一章</span>
+            <span class="ttl">06 · 字符串与正则</span>
+          </a>
+          <a class="next" href="ch08.html">
+            <span class="dir">下一章 →</span>
+            <span class="ttl">08 · 类与对象</span>
+          </a>
+        </nav>
+
+      </article>
+      <aside class="toc" data-toc></aside>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Java 学习手册 · 第 07 章</span>
+    <a href="../index.html#chapters">← 返回章节目录</a>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="回到顶部">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script src="../assets/js/data.js?v=20261111b"></script>
+<script src="../assets/js/site.js?v=20261111b"></script>
+</body>
+</html>

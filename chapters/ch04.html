@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 04 章 · 程序流程控制 | Java 学习手册</title>
+<meta name="description" content="if/else 分支、switch 选择结构与穿透、for 与 while 循环、break 与 continue、嵌套循环、Random 随机数。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<script>try{(function(){var a=JSON.parse(localStorage.getItem("java-appearance")||"null");if(!a)return;var r=document.documentElement,m={theme:"theme",ink:"ink",codeBg:"code-bg",codeInk:"code-ink",font:"font",leading:"leading",width:"width"};for(var k in m){var v=a[k];if(!v||(k==="ink"&&v==="auto"))continue;r.setAttribute("data-"+m[k],v);}})()}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/main.css?v=20261111b">
+</head>
+<body data-root="../" data-page="ch04">
+
+<div class="readbar"></div>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" data-menu aria-label="打开目录">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="../index.html">
+    <span class="brand-mark">J</span>
+    <span class="brand-text">
+      <span class="brand-name">Java 学习手册</span>
+      <span class="brand-sub">JavaSE · 12 chapters</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="../index.html">首页</a>
+    <a href="../index.html#chapters" class="active">章节目录</a>
+    <a href="../index.html#path">学习路径</a>
+    <a href="../index.html#tips">学习建议</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <button class="search-trigger" data-search-open>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <span>搜索知识点…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+  <div class="progress-pill" data-progress-pill></div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <div class="doc-with-toc">
+      <article class="doc">
+
+        <header class="chapter-head">
+          <span class="kicker">第 04 章 · 语法地基</span>
+          <h1>程序流程控制： <em>让代码学会选择和重复</em></h1>
+          <p class="lede">顺序执行只能写直线逻辑，现实问题却充满分支和重复。这一章的核心不是记忆语法，而是建立三个判断：什么时候用 if、什么时候用 switch、什么时候用哪种循环。</p>
+          <div class="meta-row">
+            <span class="meta-chip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>约 <b>55 分钟</b></span>
+            <span class="meta-chip">7 个知识点</span>
+            <span class="meta-chip">3 组结构对比</span>
+            <span class="meta-chip">前置：第 03 章</span>
+          </div>
+        </header>
+
+        <div class="objectives">
+          <h4>学完这一章，你应该能够</h4>
+          <ul>
+            <li>写出结构清晰的多分支判断</li>
+            <li>判断该用 if 还是 switch</li>
+            <li>知道四种循环各自的最佳场景</li>
+            <li>正确使用 break 与 continue</li>
+            <li>用嵌套循环处理表格型问题</li>
+            <li>按公式生成指定区间的随机数</li>
+          </ul>
+        </div>
+
+        <p>任何程序，无论多复杂，最终都由三种结构拼成：<strong>顺序</strong>（从上到下）、<strong>分支</strong>（选一条路走）、<strong>循环</strong>（重复走一段路）。这一章把后两种彻底讲清楚。</p>
+
+        <h2 id="if"><span class="h2-num">4.1</span>if 分支：条件必须是真或假</h2>
+        <p class="h2-sub">Java 不接受「非 0 即真」，这既是限制也是保护。</p>
+
+        <p>在 C 语言里 <code>if (1)</code> 是合法的，Java 不行：if 括号里必须是 <code>boolean</code> 类型。这个设计消灭了一整类 bug——把 <code>==</code> 误写成 <code>=</code> 时，C 会静默地永远为真，Java 直接编译报错。</p>
+
+        <p>多分支 <code>if ... else if ... else</code> 的执行特点是<strong>从上往下匹配，命中即结束</strong>。这意味着条件的顺序至关重要：如果先判断 <code>score &gt;= 60</code>，那么后面的 <code>&gt;= 90</code> 永远不会进入。写多分支时，要么从严格到宽松，要么从宽松到严格，不能混乱。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">多分支的顺序</span><span class="code-lang">java</span></div>
+          <pre><code>if (score &gt;= 90)      System.out.println("A");
+else if (score &gt;= 80) System.out.println("B");
+else if (score &gt;= 60) System.out.println("C");
+else                  System.out.println("D");</code></pre>
+        </div>
+
+        <p>还有两个高频错误要避开。<strong>一是在 if 条件后多写分号</strong>：<code>if (x &gt; 0);</code> 让 if 的语句体变成空语句，后面的代码会无条件执行。<strong>二是大括号省略后产生的「悬空 else」</strong>：else 永远就近匹配最近的 if，缩进具有欺骗性。规范做法是<strong>哪怕只有一行，也写大括号</strong>。</p>
+
+        <h2 id="switch"><span class="h2-num">4.2</span>switch：等值匹配的专用结构</h2>
+        <p class="h2-sub">当判断的是「一个变量等于哪几个固定值」时，switch 比 if 链更清晰。</p>
+
+        <p>switch 的适用条件很明确：<strong>被判断的表达式是 byte、short、int、char、String 或枚举，且比较的是相等</strong>。它不支持范围判断（如 <code>&gt; 60</code>），也不支持 long、float、double、boolean。所以「成绩分段」用 if，「按月份取天数」用 switch。</p>
+
+        <p>switch 最具争议的特性是<strong>穿透</strong>：如果 case 末尾没有 break，会继续执行下一个 case 的代码。这多数时候是 bug，但在「多个值共享同一段逻辑」或「累加」时反而是刻意利用的写法。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">合并分支与穿透累加</span><span class="code-lang">java</span></div>
+          <pre><code>switch (month) {
+    case 3: case 4: case 5:              // 合并：春季
+        System.out.println("春季");
+        break;
+    case 6: case 7: case 8:
+        System.out.println("夏季");
+        break;
+    default:
+        System.out.println("其他");
+}</code></pre>
+        </div>
+
+        <p>Java 14 之后提供了箭头语法 <code>case 3, 4, 5 -&gt; "春季";</code>，它<strong>天然不穿透</strong>，还能直接作为表达式返回值。新代码里优先用箭头写法，既短又不会忘记 break。</p>
+
+        <div class="callout tip">
+          <span class="co-title">default 的位置</span>
+          <p>default 不一定要写在最后，它的意思是「所有 case 都不匹配时执行」。但为了可读性，约定俗成放在最后。另外别忘了：如果所有分支都覆盖了，default 可以省略，但写上更稳妥。</p>
+        </div>
+
+        <h2 id="for"><span class="h2-num">4.3</span>for 循环：次数已知时的首选</h2>
+        <p class="h2-sub">三段式把「起点、终点、步长」写在一行，读起来就是一个完整的区间。</p>
+
+        <p><code>for (初始化; 条件; 步进)</code> 的执行顺序是：初始化只执行一次 → 判断条件 → 执行循环体 → 步进 → 再判断。这个顺序要记牢，因为它解释了「为什么循环体里能看到 i 的当前值」以及「为什么条件不满足时循环体一次都不执行」。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">for 的三种常见形态</span><span class="code-lang">java</span></div>
+          <pre><code>for (int i = 0; i &lt; 5; i++) { }        // 标准递增
+for (int i = 10; i &gt; 0; i -= 2) { }    // 倒序 + 步长
+for (int i = 1, j = 10; i &lt; j; i++, j--) { }  // 双变量</code></pre>
+        </div>
+
+        <p>循环变量 i 的作用域只在 for 内部，出了循环就不存在。这看似限制，实际是好设计：它避免了「循环结束后 i 的值是几」这类依赖实现细节的代码。如果确实需要在循环外使用下标，就把变量声明提到循环外。</p>
+
+        <h2 id="while"><span class="h2-num">4.4</span>while 与 do-while：次数未知时用它</h2>
+        <p class="h2-sub">区别只有一个：先判断还是先执行。</p>
+
+        <p>当循环次数<strong>无法预先确定</strong>，取决于某个条件何时满足时，用 while 更自然。典型例子是「不断读取输入直到用户输入 exit」「一直折纸直到厚度超过珠峰」——你事先不知道要循环多少次。</p>
+
+        <p>do-while 的特点是<strong>至少执行一次</strong>，因为判断在末尾。它最适合菜单这类场景：先显示菜单、接收选择，再判断是否继续，逻辑顺序和人的操作顺序一致。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>循环</th><th>执行顺序</th><th>最少执行</th><th>最佳场景</th></tr></thead>
+            <tbody>
+              <tr><td><code>for</code></td><td>初始化 → 判断 → 循环体 → 步进</td><td>0 次</td><td>次数已知、需要下标</td></tr>
+              <tr><td><code>while</code></td><td>判断 → 循环体</td><td>0 次</td><td>次数未知、条件驱动</td></tr>
+              <tr><td><code>do-while</code></td><td>循环体 → 判断</td><td>1 次</td><td>菜单、至少执行一次</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout warn">
+          <span class="co-title">死循环不是 bug，忘了退出才是</span>
+          <p>while 循环里如果忘记修改条件变量，就会永远执行下去。写循环时先问自己两个问题：<strong>条件最终会变假吗？</strong> 如果不会，那这个循环是否由内部 break 结束？</p>
+        </div>
+
+        <h2 id="jump"><span class="h2-num">4.5</span>break 与 continue：跳出与跳过</h2>
+        <p class="h2-sub">一个是终止整个循环，一个是跳过一次迭代。</p>
+
+        <p>这两个关键字常被混用。<strong>break</strong> 立即结束当前循环，执行循环之后的代码；<strong>continue</strong> 只结束本次迭代，直接进入下一次判断。在「查找」场景里用 break（找到就停，不必再找），在「过滤」场景里用 continue（跳过不符合条件的元素）。</p>
+
+        <p>嵌套循环中，break 默认只跳出<strong>最内层</strong>。想一次跳出多层，可以给外层循环加标签：<code>outer:</code>，然后 <code>break outer;</code>。这个语法不常用，但在二维数组查找、矩阵遍历中很有价值。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">标签跳出多层</span><span class="code-lang">java</span></div>
+          <pre><code>outer:
+for (int i = 0; i &lt; 3; i++) {
+    for (int j = 0; j &lt; 3; j++) {
+        if (i == 1 &amp;&amp; j == 1) break outer;
+    }
+}</code></pre>
+        </div>
+
+        <p>标签语法容易被滥用。如果发现自己需要跳出三层以上，通常说明这段逻辑应该抽成一个方法，用 <code>return</code> 直接结束更清晰。</p>
+
+        <h2 id="nested"><span class="h2-num">4.6</span>嵌套循环：外层管行，内层管列</h2>
+        <p class="h2-sub">所有图形打印、表格遍历、排列组合，都是同一个套路。</p>
+
+        <p>嵌套循环的思考方式不是「让代码跑起来」，而是<strong>先想清楚图形的规律，再翻译成两个变量</strong>。打印直角三角形：外层 i 控制第几行，内层 j 控制这一行打印几个——因为第 i 行要打印 i 个，所以内层条件是 <code>j &lt;= i</code>。打印倒三角则要多一层：先打空格，再打星号。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">九九乘法表</span><span class="code-lang">java</span></div>
+          <pre><code>for (int i = 1; i &lt;= 9; i++) {
+    for (int j = 1; j &lt;= i; j++) {
+        System.out.print(j + "*" + i + "=" + (i * j) + "\t");
+    }
+    System.out.println();     // 每行结束换行
+}</code></pre>
+        </div>
+
+        <p>时间复杂度也在这里第一次出现：两层循环各执行 n 次，总次数是 n²。这解释了为什么冒泡排序、选择排序是 O(n²)——它们本质上就是嵌套循环。后面学算法时，「能不能把两层循环降成一层」是最常见的优化方向。</p>
+
+        <h2 id="random"><span class="h2-num">4.7</span>Random：让程序有不确定性</h2>
+        <p class="h2-sub">记住一个公式，就能生成任意区间的整数。</p>
+
+        <p><code>Random.nextInt(n)</code> 返回 <code>[0, n)</code> 的整数——注意是左闭右开，取不到 n。想得到任意区间 <code>[min, max]</code>，公式是 <strong><code>nextInt(max - min + 1) + min</code></strong>。区间长度决定参数，起点决定偏移量。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">区间随机数</span><span class="code-lang">java</span></div>
+          <pre><code>Random r = new Random();
+r.nextInt(100);            // [0, 100)
+r.nextInt(100) + 1;        // [1, 100]
+r.nextInt(11) + 10;        // [10, 20]
+r.nextInt(6) + 1;          // 掷骰子</code></pre>
+        </div>
+
+        <p>另一个常用工具是 <code>Math.random()</code>，它返回 <code>[0.0, 1.0)</code> 的 double，需要自己乘区间。<code>Random</code> 更直观，还能指定种子复现随机序列——这在测试和游戏回放中很有用。</p>
+
+        <div class="callout info">
+          <span class="co-title">随机不等于均匀可信</span>
+          <p><code>Random</code> 是伪随机，用确定性算法生成看起来随机的序列。用在抽奖、验证码上没问题，但涉及安全场景（如令牌生成）应使用 <code>SecureRandom</code>。</p>
+        </div>
+
+        <hr>
+
+        <h2 id="summary"><span class="h2-num">小结</span>这一章真正要记住的</h2>
+        <div class="summary">
+          <h4>Key takeaways</h4>
+          <ol>
+            <li><strong>条件必须是 boolean。</strong> 把 <code>==</code> 写成 <code>=</code> 会编译报错，这是 Java 的保护。</li>
+            <li><strong>多分支从上往下匹配，命中即结束。</strong> 条件顺序错了，后面的分支永远进不去。</li>
+            <li><strong>switch 只做等值匹配。</strong> 忘记 break 会穿透；新代码优先用箭头语法。</li>
+            <li><strong>次数已知用 for，次数未知用 while，至少一次用 do-while。</strong></li>
+            <li><strong>break 结束整个循环，continue 只跳过本次。</strong> 多层跳出用标签，但更推荐抽方法。</li>
+            <li><strong>嵌套循环先找规律再写代码。</strong> 外层控制行，内层控制列。</li>
+            <li><strong>区间随机数公式：<code>nextInt(max-min+1) + min</code>。</strong></li>
+          </ol>
+        </div>
+
+        <h2 id="quiz"><span class="h2-num">自测</span>检查一下你真的懂了吗</h2>
+        <div class="quiz">
+          <details>
+            <summary>switch 的 case 后面忘了写 break 会发生什么？什么情况下这是故意的？</summary>
+            <div class="answer">发生穿透：从匹配到的 case 开始，一直执行到 break 或 switch 结束。多个值共享同一段逻辑（如 3、4、5 月都是春季）或需要累加时，会刻意利用穿透，但要加注释说明。</div>
+          </details>
+          <details>
+            <summary>while 与 do-while 的核心区别是什么？举一个只能用 do-while 更自然的场景。</summary>
+            <div class="answer">while 先判断后执行，可能一次都不执行；do-while 先执行后判断，至少执行一次。控制台菜单（先显示菜单再判断用户输入）用 do-while 更自然。</div>
+          </details>
+          <details>
+            <summary>下面代码输出什么？<code>for (int i = 0; i &lt; 3; i++) { if (i == 1) continue; System.out.print(i); }</code></summary>
+            <div class="answer">输出 <code>02</code>。i 为 1 时 continue 直接进入下一轮，跳过打印。</div>
+          </details>
+          <details>
+            <summary>要生成 [5, 15] 的随机整数，代码怎么写？为什么参数是 11 不是 15？</summary>
+            <div class="answer"><code>new Random().nextInt(11) + 5</code>。区间长度 = 15 - 5 + 1 = 11，nextInt 取不到上界，所以要加 1 才能包含 15。</div>
+          </details>
+          <details>
+            <summary>为什么说嵌套循环的性能问题本质是 n²？</summary>
+            <div class="answer">外层执行 n 次，每次内层也执行约 n 次，总操作次数约 n×n。数据量翻倍，耗时会变成四倍，这就是 O(n²) 算法在大数据量下不可用的原因。</div>
+          </details>
+        </div>
+
+        <div class="chapter-cta">
+          <div class="txt">
+            <strong>本章结束</strong>
+            <span>标记后进度会保存在本地，下次打开自动恢复。</span>
+          </div>
+          <button class="btn btn-primary" id="markDone" type="button"></button>
+        </div>
+
+        <nav class="chapter-nav">
+          <a href="ch03.html">
+            <span class="dir">← 上一章</span>
+            <span class="ttl">03 · 运算符与方法</span>
+          </a>
+          <a class="next" href="ch05.html">
+            <span class="dir">下一章 →</span>
+            <span class="ttl">05 · 数组</span>
+          </a>
+        </nav>
+
+      </article>
+      <aside class="toc" data-toc></aside>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Java 学习手册 · 第 04 章</span>
+    <a href="../index.html#chapters">← 返回章节目录</a>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="回到顶部">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script src="../assets/js/data.js?v=20261111b"></script>
+<script src="../assets/js/site.js?v=20261111b"></script>
+</body>
+</html>

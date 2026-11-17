@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 10 章 · 抽象、接口与内部类 | Java 学习手册</title>
+<meta name="description" content="抽象类与模板方法、接口与默认方法、抽象类与接口的选型、四种内部类、匿名内部类、枚举与单例模式。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<script>try{(function(){var a=JSON.parse(localStorage.getItem("java-appearance")||"null");if(!a)return;var r=document.documentElement,m={theme:"theme",ink:"ink",codeBg:"code-bg",codeInk:"code-ink",font:"font",leading:"leading",width:"width"};for(var k in m){var v=a[k];if(!v||(k==="ink"&&v==="auto"))continue;r.setAttribute("data-"+m[k],v);}})()}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/main.css?v=20261111b">
+</head>
+<body data-root="../" data-page="ch10">
+
+<div class="readbar"></div>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" data-menu aria-label="打开目录">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="../index.html">
+    <span class="brand-mark">J</span>
+    <span class="brand-text">
+      <span class="brand-name">Java 学习手册</span>
+      <span class="brand-sub">JavaSE · 12 chapters</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="../index.html">首页</a>
+    <a href="../index.html#chapters" class="active">章节目录</a>
+    <a href="../index.html#path">学习路径</a>
+    <a href="../index.html#tips">学习建议</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <button class="search-trigger" data-search-open>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <span>搜索知识点…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+  <div class="progress-pill" data-progress-pill></div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <div class="doc-with-toc">
+      <article class="doc">
+
+        <header class="chapter-head">
+          <span class="kicker">第 10 章 · 面向对象</span>
+          <h1>抽象、接口与内部类： <em>面向抽象编程</em></h1>
+          <p class="lede">当你说「我需要一个能飞的」，而不是「我需要一只鸟」，你就开始面向接口编程了。抽象类定义模板，接口定义能力，内部类让实现藏得更近——这三者构成了 Java 的扩展机制，也是所有框架的设计语言。</p>
+          <div class="meta-row">
+            <span class="meta-chip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>约 <b>80 分钟</b></span>
+            <span class="meta-chip">7 个知识点</span>
+            <span class="meta-chip">3 种设计模式雏形</span>
+            <span class="meta-chip">前置：第 09 章</span>
+          </div>
+        </header>
+
+        <div class="objectives">
+          <h4>学完这一章，你应该能够</h4>
+          <ul>
+            <li>用抽象类抽取模板方法</li>
+            <li>定义接口并让多个类实现</li>
+            <li>说清抽象类与接口的选型标准</li>
+            <li>区分四种内部类的用途</li>
+            <li>用匿名内部类实现回调</li>
+            <li>用枚举替代魔法值</li>
+            <li>手写线程安全的单例</li>
+          </ul>
+        </div>
+
+        <h2 id="abstract"><span class="h2-num">10.1</span>抽象类：把「不确定」留给子类</h2>
+        <p class="h2-sub">它描述「是什么」，但有些行为说不清楚，只能要求子类必须实现。</p>
+
+        <p>假设要设计图形系统。所有图形都有面积和周长，但「怎么算」完全取决于具体形状——圆的公式和矩形完全不同。这时父类只适合<strong>声明</strong>「必须能算面积」，而不该给出实现。这种只有声明没有方法体的方法叫抽象方法，含抽象方法的类必须声明为抽象类。</p>
+
+        <p>抽象类的两个关键限制：<strong>不能实例化</strong>（因为它的行为不完整），但<strong>可以有构造器</strong>（供子类调用）、可以有普通方法、可以有成员变量。它更像一个「半成品」，把确定的逻辑写好，把不确定的留给子类填空。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">抽象类与实现类</span><span class="code-lang">java</span></div>
+          <pre><code>public abstract class Shape {
+    protected String name;
+
+    public abstract double area();      // 子类必须实现
+
+    public void print() {               // 公共逻辑写一次
+        System.out.printf("%s 面积 %.2f%n", name, area());
+    }
+}
+
+class Circle extends Shape {
+    private final double r;
+    public Circle(double r) { this.r = r; this.name = "圆"; }
+    @Override public double area() { return Math.PI * r * r; }
+}</code></pre>
+        </div>
+
+        <p>这就是<strong>模板方法模式</strong>的雏形：父类定义流程骨架（先算面积再打印），把变化的步骤做成抽象方法交给子类。<code>print()</code> 只写一次，所有子类复用；<code>area()</code> 各不相同，各自实现。既避免了重复，又保留了扩展点。</p>
+
+        <div class="callout info">
+          <span class="co-title">抽象类可以没有抽象方法</span>
+          <p>一个类即使所有方法都有实现，只要加了 abstract 就不能被实例化。这种用法常见于「工具基类」——目的不是强制子类实现什么，而是禁止直接创建它。但它不能再加 final，因为 final 禁止继承，和 abstract 互相矛盾。</p>
+        </div>
+
+        <h2 id="interface"><span class="h2-num">10.2</span>接口：只约定能力，不关心身份</h2>
+        <p class="h2-sub">接口回答「能做什么」，而不是「是什么」。</p>
+
+        <p>接口用 <code>interface</code> 声明，方法默认是 <code>public abstract</code>，字段默认是 <code>public static final</code> 常量。一个类可以实现多个接口，这弥补了单继承的限制：鸭子既会飞又会游泳，它不需要同时继承两个父类，只需要实现两个接口。</p>
+
+        <p>Java 8 之后接口多了<strong>默认方法</strong>（default）和静态方法，Java 9 又加了私有方法。默认方法的出现是为了解决一个现实问题：接口已经被无数类实现，现在想给它加个新方法，如果加成抽象方法，所有实现类都会编译失败；加成 default 方法，就能提供默认实现，老代码不用改。这是<strong>接口的向后兼容演进</strong>。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">接口的三种方法</span><span class="code-lang">java</span></div>
+          <pre><code>public interface Flyable {
+    int MAX_HEIGHT = 10000;        // 常量
+
+    void fly();                    // 抽象方法，实现类必须写
+
+    default void land() {          // 默认方法，可选重写
+        System.out.println("缓缓降落");
+    }
+
+    static Flyable of(String type) {   // 静态工厂，用接口名调用
+        return () -&gt; System.out.println(type + " 起飞");
+    }
+}</code></pre>
+        </div>
+
+        <p>使用接口有一条重要原则：<strong>变量声明为接口类型，实现类只出现在 new 的那一刻</strong>。例如 <code>List&lt;String&gt; list = new ArrayList&lt;&gt;();</code>，后续代码只依赖 List 这个契约，换成 LinkedList 时只改一行。这就是「面向接口编程」的实际收益。</p>
+
+        <h2 id="abstract-vs-interface"><span class="h2-num">10.3</span>怎么选：抽象类还是接口</h2>
+        <p class="h2-sub">有共同状态和部分实现用抽象类，只约定行为用接口。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>对比项</th><th>抽象类</th><th>接口</th></tr></thead>
+            <tbody>
+              <tr><td>继承/实现数量</td><td>单继承</td><td>多实现</td></tr>
+              <tr><td>成员变量</td><td>任意类型，可有普通字段</td><td>只能是 public static final 常量</td></tr>
+              <tr><td>方法</td><td>抽象方法 + 普通方法</td><td>抽象 + default + static + private</td></tr>
+              <tr><td>构造器</td><td>有（供子类调用）</td><td>没有</td></tr>
+              <tr><td>设计语义</td><td>is-a，模板复用</td><td>can-do，能力契约</td></tr>
+              <tr><td>典型场景</td><td>有公共状态与固定流程</td><td>跨类型的能力抽象、解耦</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>判断方法很直接：问自己「这些类之间有没有血缘关系、有没有共享的状态」。如果有，抽象类更合适；如果只是「都能做某件事」，而彼此毫无关系（比如「可序列化」「可比较」），就用接口。</p>
+
+        <p>实际项目里常见两者组合：<strong>接口定契约，抽象类给骨架</strong>。例如 JDK 的 <code>List</code> 是接口，<code>AbstractList</code> 提供了通用实现，具体类再继承抽象类。这样既有多实现的灵活性，又能复用代码。</p>
+
+        <h2 id="inner-class"><span class="h2-num">10.4</span>内部类：把辅助类藏进主体里</h2>
+        <p class="h2-sub">四种形态，差别在于「有没有外部对象」和「能活多久」。</p>
+
+        <p>内部类是定义在另一个类内部的类，编译后会生成 <code>Outer$Inner.class</code> 这样的文件。它的价值在于<strong>紧密关联</strong>：当一个类只服务于另一个类时，把它藏在里面能减少命名污染，还能直接访问外部类的私有成员。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>类型</th><th>定义位置</th><th>是否持有外部引用</th><th>典型用途</th></tr></thead>
+            <tbody>
+              <tr><td>成员内部类</td><td>类体中，无 static</td><td>是，可直接访问外部实例成员</td><td>需要访问外部对象状态的辅助类</td></tr>
+              <tr><td>静态内部类</td><td>类体中，加 static</td><td>否</td><td>工具类、Builder、单例持有者</td></tr>
+              <tr><td>局部内部类</td><td>方法体内</td><td>是</td><td>只在方法内使用的一次性实现</td></tr>
+              <tr><td>匿名内部类</td><td>new 的时候</td><td>是</td><td>回调、事件监听、临时实现</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>最需要理解的是「是否持有外部引用」。成员内部类隐含一个 <code>Outer.this</code>，所以必须先有外部对象才能创建（<code>outer.new Inner()</code>），而且只要内部类对象还活着，外部对象就无法被回收——这是内存泄漏的常见来源。静态内部类没有这个引用，可以独立创建，也不影响外部对象回收，<strong>所以工具性质的内部类优先声明为 static</strong>。</p>
+
+        <h2 id="anonymous"><span class="h2-num">10.5</span>匿名内部类：用完就扔的实现</h2>
+        <p class="h2-sub">没有名字、只创建一次，最适合回调和事件处理。</p>
+
+        <p>语法是 <code>new 父类或接口() { 重写方法 }</code>。它在定义的同时创建了一个对象，这个类只存在这一次，连名字都不需要。JDK 里大量使用这种写法：线程的 Runnable、比较器的 Comparator、事件监听的 ActionListener。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">匿名内部类与 Lambda</span><span class="code-lang">java</span></div>
+          <pre><code>// 匿名内部类
+button.addActionListener(new ActionListener() {
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        System.out.println("被点击了");
+    }
+});
+
+// 等价的 Lambda（接口只有一个抽象方法时）
+button.addActionListener(e -&gt; System.out.println("被点击了"));</code></pre>
+        </div>
+
+        <p>Lambda 本质上是匿名内部类的语法糖，但只能用于<strong>函数式接口</strong>（只有一个抽象方法）。如果接口有多个方法需要实现，还是得写匿名内部类。另外要注意：匿名内部类引用外部局部变量时，该变量必须是 final 或 effectively final——因为它在编译后会被复制到内部类对象里，如果原变量还能改，两份数据就不一致了。</p>
+
+        <h2 id="enum"><span class="h2-num">10.6</span>枚举：类型安全的常量集合</h2>
+        <p class="h2-sub">用 int 表示状态是万恶之源，枚举把它变成类型。</p>
+
+        <p>用 <code>int PENDING = 0</code> 表示订单状态时，编译器无法阻止你传入 99；用枚举后，能传的值被严格限定在声明的那几个，编译期就能检查出来。这就是<strong>类型安全</strong>。</p>
+
+        <p>枚举的每个常量都是这个类的唯一实例，由 JVM 保证。所以它天生适合做单例，也天生适合做「有限状态」。枚举还可以带字段和构造器，用来给每个常量附加描述、编码等信息。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">带属性的枚举</span><span class="code-lang">java</span></div>
+          <pre><code>public enum OrderStatus {
+    PENDING("待支付", 0),
+    PAID("已支付", 1),
+    CANCELLED("已取消", -1);
+
+    private final String desc;
+    private final int code;
+
+    OrderStatus(String desc, int code) {   // 构造器默认 private
+        this.desc = desc; this.code = code;
+    }
+    public String getDesc() { return desc; }
+}</code></pre>
+        </div>
+
+        <p>常用方法有三个：<code>values()</code> 返回所有常量的数组，<code>valueOf(String)</code> 按名字转成枚举（名字不存在会抛异常），<code>name()</code> 返回声明时的名字。<code>ordinal()</code> 返回声明顺序，但<strong>不要用它做持久化</strong>——一旦调整顺序，历史数据就全错了，应该用自己定义的 code 字段。</p>
+
+        <h2 id="singleton"><span class="h2-num">10.7</span>单例模式：只允许一个实例</h2>
+        <p class="h2-sub">配置中心、连接池、日志器——这些对象多一个就会出问题。</p>
+
+        <p>单例的实现有三个要素：<strong>私有构造器</strong>（禁止外部 new）、<strong>私有静态实例</strong>（自己持有唯一对象）、<strong>公共静态获取方法</strong>（对外提供入口）。前两个是硬约束，第三个是访问方式。</p>
+
+        <p>常见写法有三种。<strong>饿汉式</strong>在类加载时就创建，简单、天然线程安全，但如果对象很大且从未使用就浪费了。<strong>静态内部类</strong>利用「类只在首次访问时加载」的特性，实现了延迟加载 + 线程安全，代码最优雅。<strong>枚举单例</strong>由 JVM 保证唯一，还能防反射、防序列化破坏，是《Effective Java》推荐的做法。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">静态内部类单例</span><span class="code-lang">java</span></div>
+          <pre><code>public class Config {
+    private Config() { }
+
+    private static class Holder {
+        private static final Config INSTANCE = new Config();
+    }
+
+    public static Config getInstance() { return Holder.INSTANCE; }
+}</code></pre>
+        </div>
+
+        <div class="callout warn">
+          <span class="co-title">懒汉式为什么需要 volatile</span>
+          <p>经典的「双重检查锁」写法里，<code>instance = new Singleton()</code> 不是原子操作（分配内存、初始化、赋值可能重排）。若不加 volatile，另一个线程可能拿到「已分配但未初始化完成」的半成品对象。日常开发直接用静态内部类或枚举，能少踩这个坑。</p>
+        </div>
+
+        <hr>
+
+        <h2 id="summary"><span class="h2-num">小结</span>这一章真正要记住的</h2>
+        <div class="summary">
+          <h4>Key takeaways</h4>
+          <ol>
+            <li><strong>抽象类不能实例化，但可以有构造器和普通方法。</strong> 它把确定的逻辑写好，把不确定的留给子类。</li>
+            <li><strong>模板方法：父类定流程，子类填步骤。</strong> 这是框架最常见的扩展方式。</li>
+            <li><strong>接口是能力契约，支持多实现。</strong> default 方法用于接口的向后兼容演进。</li>
+            <li><strong>选型看语义：is-a 且有共享状态用抽象类，can-do 用接口。</strong> 实战常见「接口 + 抽象骨架」组合。</li>
+            <li><strong>成员内部类持有外部引用，静态内部类不持有。</strong> 工具类内部类优先 static，避免内存泄漏。</li>
+            <li><strong>匿名内部类是一次性实现，函数式接口可用 Lambda 简化。</strong> Lambda 捕获的变量必须 effectively final。</li>
+            <li><strong>枚举是类型安全的常量，天生单例。</strong> 持久化用自定义 code，别用 ordinal。</li>
+            <li><strong>单例优先用静态内部类或枚举。</strong> 懒汉式必须处理并发与指令重排。</li>
+          </ol>
+        </div>
+
+        <h2 id="quiz"><span class="h2-num">自测</span>检查一下你真的懂了吗</h2>
+        <div class="quiz">
+          <details>
+            <summary>抽象类能不能没有抽象方法？能不能被 final 修饰？</summary>
+            <div class="answer">可以没有抽象方法（此时仅用于阻止实例化、提供公共实现），但不能加 final，因为 final 禁止继承，与抽象类的存在意义矛盾。</div>
+          </details>
+          <details>
+            <summary>接口中的字段默认是什么修饰符？可以修改吗？</summary>
+            <div class="answer">默认 <code>public static final</code>，即常量，必须在声明时赋值且不能修改。</div>
+          </details>
+          <details>
+            <summary>一个类既想继承父类又想实现接口，语法顺序是什么？</summary>
+            <div class="answer"><code>class A extends B implements C, D { }</code>。extends 必须在前，implements 在后，多个接口用逗号分隔。</div>
+          </details>
+          <details>
+            <summary>成员内部类和静态内部类的核心区别是什么？为什么工具类内部类建议 static？</summary>
+            <div class="answer">成员内部类持有外部类实例的隐式引用（Outer.this），可直接访问外部实例成员，创建时必须先有外部对象，且会阻止外部对象被回收；静态内部类没有这个引用，可独立创建，也不影响外部对象回收。</div>
+          </details>
+          <details>
+            <summary>为什么说枚举是实现单例的最佳方式？</summary>
+            <div class="answer">枚举实例由 JVM 保证唯一、构造器天然私有；反射无法创建枚举实例，序列化也只会返回同一个对象，天然免疫这两种破坏单例的方式。</div>
+          </details>
+        </div>
+
+        <div class="chapter-cta">
+          <div class="txt">
+            <strong>本章结束</strong>
+            <span>标记后进度会保存在本地，下次打开自动恢复。</span>
+          </div>
+          <button class="btn btn-primary" id="markDone" type="button"></button>
+        </div>
+
+        <nav class="chapter-nav">
+          <a href="ch09.html">
+            <span class="dir">← 上一章</span>
+            <span class="ttl">09 · 继承与多态</span>
+          </a>
+          <a class="next" href="ch11.html">
+            <span class="dir">下一章 →</span>
+            <span class="ttl">11 · 常用 API 与 Lambda</span>
+          </a>
+        </nav>
+
+      </article>
+      <aside class="toc" data-toc></aside>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Java 学习手册 · 第 10 章</span>
+    <a href="../index.html#chapters">← 返回章节目录</a>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="回到顶部">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script src="../assets/js/data.js?v=20261111b"></script>
+<script src="../assets/js/site.js?v=20261111b"></script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 08 章 · 类与对象 | Java 学习手册</title>
+<meta name="description" content="面向对象思维、类与对象、构造器、this 关键字、成员变量与局部变量、封装与访问控制、JavaBean、static、代码块、包与可变参数。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<script>try{(function(){var a=JSON.parse(localStorage.getItem("java-appearance")||"null");if(!a)return;var r=document.documentElement,m={theme:"theme",ink:"ink",codeBg:"code-bg",codeInk:"code-ink",font:"font",leading:"leading",width:"width"};for(var k in m){var v=a[k];if(!v||(k==="ink"&&v==="auto"))continue;r.setAttribute("data-"+m[k],v);}})()}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/main.css?v=20261111b">
+</head>
+<body data-root="../" data-page="ch08">
+
+<div class="readbar"></div>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" data-menu aria-label="打开目录">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="../index.html">
+    <span class="brand-mark">J</span>
+    <span class="brand-text">
+      <span class="brand-name">Java 学习手册</span>
+      <span class="brand-sub">JavaSE · 12 chapters</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="../index.html">首页</a>
+    <a href="../index.html#chapters" class="active">章节目录</a>
+    <a href="../index.html#path">学习路径</a>
+    <a href="../index.html#tips">学习建议</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <button class="search-trigger" data-search-open>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <span>搜索知识点…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+  <div class="progress-pill" data-progress-pill></div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <div class="doc-with-toc">
+      <article class="doc">
+
+        <header class="chapter-head">
+          <span class="kicker">第 08 章 · 面向对象</span>
+          <h1>类与对象： <em>换一种方式组织代码</em></h1>
+          <p class="lede">前面的章节里，数据和操作是分开的：一堆变量配一堆方法。面向对象把它们捆在一起，让「一个学生」同时拥有姓名、成绩和行为。这不是语法变化，而是思维方式的切换——这一章是整门课的分水岭。</p>
+          <div class="meta-row">
+            <span class="meta-chip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>约 <b>80 分钟</b></span>
+            <span class="meta-chip">9 个知识点</span>
+            <span class="meta-chip">面向对象基石</span>
+            <span class="meta-chip">前置：第 07 章</span>
+          </div>
+        </header>
+
+        <div class="objectives">
+          <h4>学完这一章，你应该能够</h4>
+          <ul>
+            <li>用「属性 + 行为」描述一个现实事物</li>
+            <li>写出带参/无参构造器并解释职责</li>
+            <li>用 this 解决同名与构造器复用</li>
+            <li>列出成员变量与局部变量的五处差异</li>
+            <li>用封装保护对象的状态</li>
+            <li>说清 static 与非 static 的边界</li>
+            <li>解释 new 一个对象的完整顺序</li>
+          </ul>
+        </div>
+
+        <h2 id="oop-intro"><span class="h2-num">8.1</span>先想「有哪些事物」，再想「怎么算」</h2>
+        <p class="h2-sub">面向对象的第一步不是写类，而是识别对象。</p>
+
+        <p>假设要做一个学生成绩管理功能。面向过程的思路是：定义一个数组存成绩、定义几个方法算总分、算平均、排序。数据和方法是分离的，方法多了以后，谁都能改数组，改坏了也查不出来。</p>
+
+        <p>面向对象的思路是先问：这里有哪些「事物」？学生、课程、班级。每个事物有自己的<strong>属性</strong>（姓名、学号、成绩）和<strong>行为</strong>（选课、计算绩点）。把这些打包成一个类，数据就只能通过它自己提供的方法来访问，边界清晰了。</p>
+
+        <div class="concept">
+          <span class="co-label">类与对象</span>
+          <p><strong>类</strong>是模板，描述一类事物共有的属性和行为，写在代码里。<strong>对象</strong>是按模板创建出来的具体实例，存在于内存中。一个类可以创建无数个对象，每个对象有自己独立的属性值，但共享同一份方法代码。</p>
+        </div>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">类与对象</span><span class="code-lang">java</span></div>
+          <pre><code>public class Student {
+    String name;          // 属性
+    int age;
+    double score;
+
+    void introduce() {    // 行为
+        System.out.println(name + "，" + age + " 岁");
+    }
+}
+
+Student s = new Student();   // 创建对象
+s.name = "张三";
+s.introduce();</code></pre>
+        </div>
+
+        <p>对象的内存结构值得想清楚：<code>s</code> 这个引用在栈上，对象实体在堆上，三个属性依次排在实体里。方法不在对象里——方法只有一份，存在方法区，调用时通过隐式的 <code>this</code> 知道操作的是哪个对象。这也解释了两个对象为什么互不影响：它们的属性各自独立。</p>
+
+        <h2 id="constructor"><span class="h2-num">8.2</span>构造器：对象出生的那一刻</h2>
+        <p class="h2-sub">它的唯一职责，是把对象初始化成一个合法状态。</p>
+
+        <p><code>new</code> 的时候会自动调用构造器。构造器名字必须与类名相同、没有返回值类型（连 void 都不能写）。它的意义在于：保证对象一旦被创建出来，就是可用的，而不是一堆默认值。</p>
+
+        <p>如果不写任何构造器，编译器会自动补一个公共无参构造器。但<strong>只要你手写了任意一个构造器，这个赠送就取消了</strong>——这也是为什么很多框架要求实体类必须有显式无参构造器：它们通过反射创建对象，找不到就报错。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">构造器重载与复用</span><span class="code-lang">java</span></div>
+          <pre><code>public Student() { }                       // 无参：留给框架
+
+public Student(String name, int age) {
+    this.name = name;                      // this 区分成员与参数
+    this.age = age;
+}
+
+public Student(String name, int age, double score) {
+    this(name, age);                       // 复用上面的构造器
+    this.score = score;
+}</code></pre>
+        </div>
+
+        <p>实际项目中常见的写法是「全参构造 + 无参构造」并存：全参方便手写创建，无参供框架反射使用。构造器里还应做基本校验（如年龄不能为负），让非法对象根本创建不出来——这是比 setter 校验更早的一道防线。</p>
+
+        <h2 id="this"><span class="h2-num">8.3</span>this：当前对象的引用</h2>
+        <p class="h2-sub">它解决两个问题：变量同名、构造器复用。</p>
+
+        <p><code>this</code> 是一个隐式参数，指向「正在调用这个方法的对象」。当成员变量和参数同名时，不加 this 会优先使用参数（就近原则），加了 this 才明确指成员变量。这是 this 最常见的用途。</p>
+
+        <p>第二个用途是 <code>this(...)</code> 调用本类的另一个构造器，用来避免重复的初始化代码。它必须写在构造器第一行，且不能和 <code>super(...)</code> 同时出现——因为两者都要求占据第一行。</p>
+
+        <p>第三个用途是返回 this 实现<strong>链式调用</strong>，很多框架的 Builder 模式和 StringBuffer 的 append 都是这个套路。</p>
+
+        <div class="callout danger">
+          <span class="co-title">static 方法里没有 this</span>
+          <p>静态方法属于类，调用它的时候可能根本没有对象存在，所以 <code>this</code> 无从指向。在 static 方法里使用 this 会直接编译报错，这也是「静态方法不能访问实例成员」的根本原因。</p>
+        </div>
+
+        <h2 id="var-scope"><span class="h2-num">8.4</span>成员变量与局部变量：两种生命周期</h2>
+        <p class="h2-sub">放在哪里，决定了它活多久、谁能看见、有没有默认值。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>对比项</th><th>成员变量</th><th>局部变量</th></tr></thead>
+            <tbody>
+              <tr><td>声明位置</td><td>类体中、方法外</td><td>方法体、代码块、参数列表</td></tr>
+              <tr><td>存储位置</td><td>堆（属于对象）</td><td>栈（属于方法调用）</td></tr>
+              <tr><td>默认值</td><td>有（0 / 0.0 / false / null）</td><td>无，必须先赋值</td></tr>
+              <tr><td>生命周期</td><td>对象创建到被回收</td><td>方法进栈到出栈</td></tr>
+              <tr><td>修饰符</td><td>可用访问修饰符、static、final</td><td>只能用 final</td></tr>
+              <tr><td>内存共享</td><td>每个对象一份</td><td>每次调用一份</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>这六条差异其实可以归结为一句话：<strong>成员变量是对象的状态，局部变量是方法的临时工</strong>。状态要长期保存、要能被多个方法共享，所以放在堆上随对象走；临时工用完就撤，所以放在栈上，随方法结束而销毁。</p>
+
+        <p>理解这一点，就能明白为什么递归时局部变量不会互相干扰（每次调用都有独立的栈帧），也能明白为什么把大数组声明为成员变量会长期占用内存。</p>
+
+        <h2 id="encapsulation"><span class="h2-num">8.5</span>封装：不是加 getter 就完事</h2>
+        <p class="h2-sub">封装的目的是控制状态如何被修改，而不只是把字段藏起来。</p>
+
+        <p>很多教程把封装讲成「字段加 private，再生成 getter/setter」，这其实只做了形式。真正的封装是：<strong>对象自己保证内部状态始终合法</strong>。比如余额不能被外部直接改成负数，密码不能被读出来，年龄不能是 -5。</p>
+
+        <p>做法是把字段设为 private，只暴露必要的方法，并在方法里做校验。对于「只读」字段只提供 getter，对于「可写」字段在 setter 里判断合法性。对于像「存款」这种带业务语义的操作，应该提供 <code>deposit</code> 而不是 <code>setBalance</code>——因为前者能保证「加钱」这个动作的完整性。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">封装带来的保护</span><span class="code-lang">java</span></div>
+          <pre><code>private double balance;
+
+public void deposit(double amount) {
+    if (amount &lt;= 0) throw new IllegalArgumentException("金额必须大于 0");
+    balance += amount;
+}
+
+public double getBalance() { return balance; }   // 只读，无 setter</code></pre>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>修饰符</th><th>本类</th><th>同包</th><th>子类</th><th>任意位置</th></tr></thead>
+            <tbody>
+              <tr><td><code>private</code></td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+              <tr><td>默认（不写）</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td></tr>
+              <tr><td><code>protected</code></td><td>✓</td><td>✓</td><td>✓</td><td>✗</td></tr>
+              <tr><td><code>public</code></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>使用原则很简单：<strong>能用 private 就用 private，确实需要对外才放宽</strong>。字段一律 private，方法按需 public。暴露得越少，以后改动时受影响的代码就越少。</p>
+
+        <h2 id="javabean"><span class="h2-num">8.6</span>JavaBean：一套被框架依赖的约定</h2>
+        <p class="h2-sub">它不是语法要求，而是生态约定——很多框架靠它工作。</p>
+
+        <p>规范有四条：类是 public 的、有无参构造器、字段 private、每个字段配 getter/setter。boolean 类型的 getter 叫 <code>isXxx()</code>，这是命名约定，不能写成 getActive。</p>
+
+        <p>为什么框架依赖它？因为 Spring 注入、MyBatis 映射、JSON 序列化都靠<strong>反射</strong>：它们不知道你的类长什么样，只能按约定去找 setXxx 或 getXxx。字段名是 username，就会去找 setUsername；找不到就赋不上值。</p>
+
+        <div class="callout tip">
+          <span class="co-title">IDEA 一键生成</span>
+          <p>类中按 <code>Alt + Insert</code>，选择 Constructor、Getter and Setter、toString、equals and hashCode，可以一次性生成全部样板代码。Lombok 的 <code>@Data</code> 也能达到同样效果，但团队要统一使用。</p>
+        </div>
+
+        <h2 id="static"><span class="h2-num">8.7</span>static：属于类，而不是属于对象</h2>
+        <p class="h2-sub">加了 static，这份数据或方法就全类共享一份。</p>
+
+        <p>普通成员变量每个对象一份，改了不影响别人。加了 static 之后，变量属于类本身，随类加载而初始化，所有对象共用同一份。所以它适合表达「与具体对象无关」的东西：常量、计数器、工具方法。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">静态计数器</span><span class="code-lang">java</span></div>
+          <pre><code>public class User {
+    private static int count = 0;   // 全类共享
+
+    public User() { count++; }      // 每 new 一个就 +1
+
+    public static int getCount() { return count; }
+}</code></pre>
+        </div>
+
+        <p>使用上有三条铁律：<strong>静态方法不能访问实例成员</strong>（没有 this，不知道操作哪个对象）；<strong>静态方法里不能用 this / super</strong>；<strong>静态成员建议用类名访问</strong>（<code>User.getCount()</code>），而不是通过对象（<code>user.getCount()</code>），后者会让读代码的人误以为它和对象有关。</p>
+
+        <p>还有一点容易被忽略：<strong>static 方法不能被重写</strong>。子类可以定义同名同参的静态方法，但那叫「隐藏」，调用哪个取决于变量的编译期类型，不参与多态。所以工具类方法适合 static，需要多态扩展的方法不适合。</p>
+
+        <h2 id="block-main"><span class="h2-num">8.8</span>代码块与 main：谁先执行</h2>
+        <p class="h2-sub">顺序是「静态 → 实例 → 构造器」，父类永远先于子类。</p>
+
+        <p>静态代码块在<strong>类加载时</strong>执行，且只执行一次，适合做全局初始化（加载配置、注册驱动）。实例代码块在<strong>每次 new 时</strong>执行，且先于构造器，适合把多个构造器共用的初始化逻辑抽出来。局部代码块只是限定变量作用域，实际很少用。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">执行顺序</span><span class="code-lang">java</span></div>
+          <pre><code>static { System.out.println("1 静态块，只一次"); }
+{ System.out.println("2 实例块，每次 new"); }
+public Demo() { System.out.println("3 构造器"); }
+
+// 输出：1 2 3 2 3（创建两个对象）</code></pre>
+        </div>
+
+        <p>main 方法的五个部分也各有原因：public 是因为 JVM 要从外部调用；static 是因为调用时还没有对象；void 是因为返回值给 JVM 没有意义；名字 main 是约定；<code>String[] args</code> 用来接收命令行参数。少一个修饰符，JVM 就找不到入口。</p>
+
+        <h2 id="package"><span class="h2-num">8.9</span>包、可变参数与递归</h2>
+        <p class="h2-sub">包解决重名，可变参数解决「参数个数不定」，递归解决「自己调用自己」。</p>
+
+        <p>包的作用类似文件目录：把类分组，避免同名冲突，同时提供一层访问控制（默认修饰符的类只在同包可见）。包名用域名倒写，全小写，例如 <code>com.itheima.demo</code>。使用其他包的类需要 import，同包的类不用。</p>
+
+        <p>可变参数 <code>int... nums</code> 本质是数组，必须是参数列表的最后一个，一个方法只能有一个。调用时既可以传多个值，也可以传一个数组，不传则得到长度为 0 的数组（不是 null）。</p>
+
+        <p>递归的核心是<strong>出口 + 缩小规模</strong>。没有出口就会不断压栈，最终 <code>StackOverflowError</code>。写递归前先想清楚：什么时候停？每一步如何让问题变小？想清楚这两点，代码自然就出来了。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">递归求阶乘</span><span class="code-lang">java</span></div>
+          <pre><code>public static long factorial(int n) {
+    if (n &lt;= 1) return 1;          // 出口
+    return n * factorial(n - 1);   // 规模缩小
+}</code></pre>
+        </div>
+
+        <hr>
+
+        <h2 id="summary"><span class="h2-num">小结</span>这一章真正要记住的</h2>
+        <div class="summary">
+          <h4>Key takeaways</h4>
+          <ol>
+            <li><strong>类描述「有哪些属性和行为」，对象是它的实例。</strong> 每个对象的属性独立，方法共享一份。</li>
+            <li><strong>构造器的职责是把对象初始化成合法状态。</strong> 手写构造器后，默认无参构造不再自动生成。</li>
+            <li><strong>this 指向当前对象，用来区分同名变量、复用构造器、链式调用。</strong> static 方法里没有 this。</li>
+            <li><strong>成员变量随对象活在堆上，局部变量随方法活在栈上。</strong></li>
+            <li><strong>封装的本质是控制状态如何被修改，不是生成 getter/setter。</strong></li>
+            <li><strong>JavaBean 是框架依赖的约定。</strong> 反射按 getXxx/setXxx 找字段，所以命名必须规范。</li>
+            <li><strong>static 属于类，随类加载初始化，全类共享一份。</strong> 不能被重写，不能访问实例成员。</li>
+            <li><strong>执行顺序：静态块 → 实例块 → 构造器，父类先于子类。</strong></li>
+            <li><strong>递归必须有出口，且每步让规模变小。</strong></li>
+          </ol>
+        </div>
+
+        <h2 id="quiz"><span class="h2-num">自测</span>检查一下你真的懂了吗</h2>
+        <div class="quiz">
+          <details>
+            <summary>只写了有参构造器，还能用 <code>new Student()</code> 吗？为什么框架要求无参构造器？</summary>
+            <div class="answer">不能。默认无参构造器只在「完全没有构造器」时由编译器添加。框架（Spring、MyBatis、JSON 库）通过反射 newInstance() 创建对象，必须有可访问的无参构造器。</div>
+          </details>
+          <details>
+            <summary>为什么 setter 里要做校验，而不是把字段设为 public？</summary>
+            <div class="answer">public 字段无法阻止非法赋值，对象状态会失控；setter 可以在赋值前校验、转换、触发副作用，并在不改变调用方代码的前提下修改内部实现——这是封装的核心价值。</div>
+          </details>
+          <details>
+            <summary>静态方法里为什么不能用 this？能访问实例变量吗？</summary>
+            <div class="answer">静态方法属于类，调用时可能根本没有对象，所以没有 this；同理不能直接访问实例变量/方法，必须先创建对象再通过对象访问。</div>
+          </details>
+          <details>
+            <summary>说出 new 一个对象时的执行顺序。</summary>
+            <div class="answer">类加载（首次）→ 静态代码块 → 分配内存并给成员变量默认值 → 实例代码块 → 构造器 → 返回引用。若有父类，父类的静态块、实例块、构造器都先于子类。</div>
+          </details>
+          <details>
+            <summary>可变参数在方法内部是什么类型？调用时一个都不传会得到 null 吗？</summary>
+            <div class="answer">本质是数组（<code>int[]</code>），可以直接用 length 和增强 for 遍历。不传参数时得到长度为 0 的数组，不是 null，所以可以直接遍历。</div>
+          </details>
+        </div>
+
+        <div class="chapter-cta">
+          <div class="txt">
+            <strong>本章结束</strong>
+            <span>标记后进度会保存在本地，下次打开自动恢复。</span>
+          </div>
+          <button class="btn btn-primary" id="markDone" type="button"></button>
+        </div>
+
+        <nav class="chapter-nav">
+          <a href="ch07.html">
+            <span class="dir">← 上一章</span>
+            <span class="ttl">07 · 包装类与 Object 体系</span>
+          </a>
+          <a class="next" href="ch09.html">
+            <span class="dir">下一章 →</span>
+            <span class="ttl">09 · 继承与多态</span>
+          </a>
+        </nav>
+
+      </article>
+      <aside class="toc" data-toc></aside>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Java 学习手册 · 第 08 章</span>
+    <a href="../index.html#chapters">← 返回章节目录</a>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="回到顶部">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script src="../assets/js/data.js?v=20261111b"></script>
+<script src="../assets/js/site.js?v=20261111b"></script>
+</body>
+</html>

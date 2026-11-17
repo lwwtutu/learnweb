@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 02 章 · 基础语法 | Java 学习手册</title>
+<meta name="description" content="常量与变量、作用域、八种基本数据类型、引用类型的内存模型、自动类型转换与强制类型转换的精度陷阱。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<script>try{(function(){var a=JSON.parse(localStorage.getItem("java-appearance")||"null");if(!a)return;var r=document.documentElement,m={theme:"theme",ink:"ink",codeBg:"code-bg",codeInk:"code-ink",font:"font",leading:"leading",width:"width"};for(var k in m){var v=a[k];if(!v||(k==="ink"&&v==="auto"))continue;r.setAttribute("data-"+m[k],v);}})()}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/main.css?v=20261111b">
+</head>
+<body data-root="../" data-page="ch02">
+
+<div class="readbar"></div>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" data-menu aria-label="打开目录">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="../index.html">
+    <span class="brand-mark">J</span>
+    <span class="brand-text">
+      <span class="brand-name">Java 学习手册</span>
+      <span class="brand-sub">JavaSE · 12 chapters</span>
+    </span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="../index.html">首页</a>
+    <a href="../index.html#chapters" class="active">章节目录</a>
+    <a href="../index.html#path">学习路径</a>
+    <a href="../index.html#tips">学习建议</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <button class="search-trigger" data-search-open>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    <span>搜索知识点…</span>
+    <kbd>Ctrl K</kbd>
+  </button>
+  <div class="progress-pill" data-progress-pill></div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" data-sidebar></aside>
+  <div class="main">
+    <div class="doc-with-toc">
+      <article class="doc">
+
+        <header class="chapter-head">
+          <span class="kicker">第 02 章 · 语法地基</span>
+          <h1>基础语法： <em>类型决定了数据的命运</em></h1>
+          <p class="lede">Java 是强类型语言：每个变量在编译期就必须确定类型，之后能存什么、能算什么、会不会丢数据，全都由它决定。这一章的重点不是背语法，而是理解「类型为什么这么设计」以及「什么时候会悄悄出错」。</p>
+          <div class="meta-row">
+            <span class="meta-chip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>约 <b>50 分钟</b></span>
+            <span class="meta-chip">6 个知识点</span>
+            <span class="meta-chip">3 个必背结论</span>
+            <span class="meta-chip">前置：第 01 章</span>
+          </div>
+        </header>
+
+        <div class="objectives">
+          <h4>学完这一章，你应该能够</h4>
+          <ul>
+            <li>解释 final 常量的意义与命名规范</li>
+            <li>判断一个变量在哪些位置可见</li>
+            <li>说出八种基本类型的字节数与范围</li>
+            <li>解释引用类型赋值时发生了什么</li>
+            <li>预判一次类型转换是否安全</li>
+            <li>解释强制转换为何会溢出</li>
+          </ul>
+        </div>
+
+        <h2 id="constant"><span class="h2-num">2.1</span>常量与变量：什么该变，什么不该变</h2>
+        <p class="h2-sub">常量表达「约定」，变量表达「状态」。</p>
+
+        <p>程序里有两类数据。一类会随着运行不断变化，比如账户余额、游戏分数、循环计数，它们用<strong>变量</strong>。另一类在整个运行期间都不应该变，比如圆周率、一周七天、系统允许的最大登录次数，它们应该用<strong>常量</strong>。</p>
+
+        <p>把「不该变的」写成常量，不只是风格问题。如果代码里到处散落着 <code>3.14</code> 和 <code>3</code>，某天需求变更，你得靠搜索一个个改，漏一个就是 bug；而写成常量后只改一处，编译器会帮你保证一致性。这也是一种<strong>把意图写进代码</strong>的方式：看到 <code>MAX_LOGIN_COUNT</code>，你立刻知道它不能被改。</p>
+
+        <div class="concept">
+          <span class="co-label">final 的语义</span>
+          <p><code>final</code> 修饰的变量只能被赋值一次，之后任何修改都是编译错误。它在声明时必须初始化（或在构造器中初始化）。修饰基本类型时值不可变；修饰引用类型时<strong>引用不可变，但对象内容仍可修改</strong>。</p>
+        </div>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">常量写法</span><span class="code-lang">java</span></div>
+          <pre><code>public static final double PI = 3.1415926;
+public static final int MAX_LOGIN_COUNT = 3;
+
+final int LIMIT = 100;
+// LIMIT = 200;   // 编译错误：无法为 final 变量赋值</code></pre>
+        </div>
+
+        <p>按规范，常量名全部大写、单词之间用下划线，一眼就能和变量区分开。加了 <code>static</code> 表示它属于类而不是某个对象，全类共享一份，这是定义常量的标准姿势。</p>
+
+        <h2 id="scope"><span class="h2-num">2.2</span>作用域：变量能活多久、能被谁看见</h2>
+        <p class="h2-sub">一对大括号就是一个作用域，变量出生在其中，也死在其中。</p>
+
+        <p>声明位置不同，变量的身份完全不同。写在类体中、方法外的叫<strong>成员变量</strong>，它跟着对象走；写在方法或代码块里的叫<strong>局部变量</strong>，它跟着方法调用的栈帧走。方法一返回，局部变量立刻失效，这也是为什么它不能跨方法使用。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>对比项</th><th>成员变量</th><th>局部变量</th></tr></thead>
+            <tbody>
+              <tr><td>声明位置</td><td>类体中、方法外</td><td>方法体、代码块、参数列表</td></tr>
+              <tr><td>存储位置</td><td>堆（随对象）</td><td>栈（随方法调用）</td></tr>
+              <tr><td>默认值</td><td>有（0 / 0.0 / false / null）</td><td>没有，必须先赋值</td></tr>
+              <tr><td>生命周期</td><td>对象创建到被回收</td><td>方法进栈到出栈</td></tr>
+              <tr><td>可加修饰符</td><td>public、private、static、final 等</td><td>只能加 final</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>作用域遵循两条规则。<strong>一是嵌套可见</strong>：内层能访问外层，外层看不见内层。<strong>二是就近优先</strong>：内层声明了同名变量，就会遮蔽外层那个，此时想访问外层必须用 <code>this.</code> 或类名限定。这也是为什么第 08 章讲 this 时，第一个用途就是解决同名冲突。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">作用域示例</span><span class="code-lang">java</span></div>
+          <pre><code>int a = 10;          // main 内有效
+{
+    int b = 20;      // 只在这个代码块内有效
+    System.out.println(a + b);
+}
+// System.out.println(b);   // 编译错误：找不到符号
+
+for (int i = 0; i &lt; 3; i++) { }
+// System.out.println(i);   // 编译错误：i 只属于 for</code></pre>
+        </div>
+
+        <div class="callout warn">
+          <span class="co-title">为什么局部变量没有默认值</span>
+          <p>成员变量随对象分配在堆上，JVM 必须给它一个确定初值，否则对象里会有「未定义」的垃圾数据。局部变量在栈上，编译器可以通过「使用前必须赋值」的检查彻底杜绝未初始化读取，代价更小、更安全。</p>
+        </div>
+
+        <h2 id="primitive"><span class="h2-num">2.3</span>八种基本类型：为什么分这么细</h2>
+        <p class="h2-sub">细分不是为了折磨你，而是内存与精度之间的权衡。</p>
+
+        <p>整数有四种宽度、小数有两种精度，本质是在问一个问题：<strong>这块数据需要多大范围、多少精度？</strong> 用 <code>byte</code> 存年龄足够，用 <code>int</code> 存不了人口数，用 <code>double</code> 存金额会丢精度。选小了溢出，选大了浪费内存，Java 把选择权交给你。</p>
+
+        <p>范围有个统一规律：n 位有符号整数的范围是 <code>-2^(n-1) ~ 2^(n-1)-1</code>。所以 byte（8 位）是 -128~127，short（16 位）约 ±3.2 万，int（32 位）约 ±21 亿，long（64 位）约 ±922 亿亿。记住「1、2、4、8 字节」和这个公式，就不需要死记硬背。</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>类型</th><th>字节</th><th>取值范围</th><th>默认值</th><th>什么时候用</th></tr></thead>
+            <tbody>
+              <tr><td><code>byte</code></td><td>1</td><td>-128 ~ 127</td><td>0</td><td>文件流、明确范围很小的计数</td></tr>
+              <tr><td><code>short</code></td><td>2</td><td>-32768 ~ 32767</td><td>0</td><td>几乎不用，历史遗留</td></tr>
+              <tr><td><code>int</code></td><td>4</td><td>约 ±21 亿</td><td>0</td><td>整数的默认选择</td></tr>
+              <tr><td><code>long</code></td><td>8</td><td>约 ±9.2×10¹⁸</td><td>0L</td><td>时间戳、超大计数（加 L）</td></tr>
+              <tr><td><code>float</code></td><td>4</td><td>约 ±3.4×10³⁸，6~7 位有效数字</td><td>0.0f</td><td>精度要求不高时（加 f）</td></tr>
+              <tr><td><code>double</code></td><td>8</td><td>约 ±1.8×10³⁰⁸，15~16 位有效数字</td><td>0.0</td><td>小数的默认选择</td></tr>
+              <tr><td><code>char</code></td><td>2</td><td>0 ~ 65535（无符号）</td><td>'\u0000'</td><td>单个字符，本质是 Unicode 码值</td></tr>
+              <tr><td><code>boolean</code></td><td>1</td><td>true / false</td><td>false</td><td>条件判断，不能用 0/1 代替</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>有两个地方容易反直觉。第一，<strong>char 是无符号的</strong>，范围从 0 开始，因为它表示的是字符编码而不是数量。<strong>第二，float 只有 4 字节，但范围比 8 字节的 long 还大</strong>——因为浮点数采用「符号位 + 指数位 + 尾数位」的表示法，牺牲精度换取了范围。所以 long 转 float 是允许的，但会丢精度。</p>
+
+        <p>另一个必须知道的现象是<strong>整数溢出</strong>：<code>Integer.MAX_VALUE + 1</code> 不会报错，而是直接变成最小值 -2147483648，因为最高位符号位被进位翻转了。这类错误静默发生，只能在设计时提前判断范围。</p>
+
+        <div class="callout danger">
+          <span class="co-title">浮点数不能直接比较相等</span>
+          <p><code>0.1 + 0.2 == 0.3</code> 的结果是 <code>false</code>。要比较两个 double 是否相等，应判断差值是否小于某个极小值，或直接改用 <code>BigDecimal</code>。金额、税率、利率这类场景尤其不能掉以轻心。</p>
+        </div>
+
+        <h2 id="reference"><span class="h2-num">2.4</span>引用类型：变量里装的其实是地址</h2>
+        <p class="h2-sub">基本类型存值，引用类型存「门牌号」。</p>
+
+        <p>除了八种基本类型，其余都是引用类型：String、数组、类、接口、枚举。声明 <code>String name = "张三"</code> 时，栈上的 <code>name</code> 只存一个地址，真正的字符串对象在堆里。这个区别在赋值时暴露得最彻底。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">值与地址的区别</span><span class="code-lang">java</span></div>
+          <pre><code>int x = 10;
+int y = x;          // 复制值
+y = 20;             // x 不受影响，仍是 10
+
+int[] a = {1, 2, 3};
+int[] b = a;        // 复制地址，两个变量指向同一个数组
+b[0] = 99;          // a[0] 也变成 99</code></pre>
+        </div>
+
+        <p>这个行为常被误称为「引用传递」，其实 Java <strong>只有值传递</strong>：方法接收到的是地址的副本。所以通过副本修改对象内容，原对象会变；让副本指向一个新对象，原引用不受影响。第 03 章讲方法参数时会再验证一次。</p>
+
+        <p>String 是个特例：它不可变，任何「修改」都会创建新对象，所以 <code>s2 = s1; s2 += "x"</code> 之后 <code>s1</code> 依然原样。这让 String 用起来像值类型，但也带来了拼接性能问题，第 06 章会专门讨论。</p>
+
+        <div class="callout info">
+          <span class="co-title">null 是什么</span>
+          <p><code>null</code> 表示「这个引用没有指向任何对象」。它不等于空字符串 <code>""</code>，也不等于 0。对 null 调用任何方法都会抛 <code>NullPointerException</code>，这是 Java 最常见的一类运行时异常。</p>
+        </div>
+
+        <h2 id="auto-cast"><span class="h2-num">2.5</span>自动类型转换：小范围向大范围看齐</h2>
+        <p class="h2-sub">转换是安全的才自动，不安全的必须你亲自签字。</p>
+
+        <p>规则很朴素：<strong>小范围转大范围不会丢数据，所以编译器自动完成</strong>。链条是 <code>byte → short → int → long → float → double</code>，另外 <code>char → int</code> 也自动（得到 Unicode 码值）。反过来就必须强制转换。</p>
+
+        <p>真正需要留意的是<strong>表达式中的自动提升</strong>：任何小于 int 的整数类型（byte、short、char）参与二元运算时，会先统一提升为 int，所以 <code>byte + byte</code> 的结果是 int，直接赋回 byte 会编译报错。这是 Java 为了保证中间结果不溢出而做的保守设计。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">自动转换</span><span class="code-lang">java</span></div>
+          <pre><code>int i = 100;
+long l = i;          // 自动：int -> long
+double d = l;        // 自动：long -> double
+
+byte b1 = 10, b2 = 20;
+// byte b3 = b1 + b2;      // 编译错误：结果是 int
+int b3 = b1 + b2;          // 正确
+byte b4 = (byte) (b1 + b2);// 需要时强转回去</code></pre>
+        </div>
+
+        <div class="callout warn">
+          <span class="co-title">自动转换也可能丢精度</span>
+          <p><code>long</code> 转 <code>float</code> 是自动的，但 float 只有 6~7 位有效数字，超过部分会被舍入。一个 19 位的 long 转成 float 再转回来，数值已经变了。所以「自动」只代表不报错，不代表无损。</p>
+        </div>
+
+        <h2 id="force-cast"><span class="h2-num">2.6</span>强制类型转换：把风险摆到明面上</h2>
+        <p class="h2-sub">语法只是加一对括号，代价却可能是溢出。</p>
+
+        <p>格式是 <code>目标类型 变量 = (目标类型) 值;</code>。它的实现方式是<strong>直接截断二进制的高位</strong>，既不做四舍五入，也不做范围检查。所以 <code>(int) 3.99</code> 得到 3，<code>(byte) 300</code> 得到 44（300 减 256）。</p>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-dots"><i></i><i></i><i></i></span><span class="code-file">强制转换的三种典型用途</span><span class="code-lang">java</span></div>
+          <pre><code>int a = (int) 3.99;                 // 3，截断小数
+char c = (char) 66;                 // 'B'，码值转字符
+int n = '7' - '0';                  // 7，字符数字转数字
+byte b = (byte) 300;                // 44，溢出
+long round = (long) (19.987 * 100 + 0.5) / 100;   // 四舍五入套路</code></pre>
+        </div>
+
+        <p>实际开发中，强制转换主要出现在三个场景：<strong>取整</strong>（丢弃小数部分）、<strong>字符与码值互转</strong>、<strong>把运算结果收窄回原类型</strong>。理解它「按位截断」的本质，就不会对结果感到意外。</p>
+
+        <p>需要安全转换时，先用范围判断，或用会抛异常的 <code>Math.toIntExact()</code>——后者在溢出时抛 <code>ArithmeticException</code>，至少不会静默出错。工程上更推荐后者：<strong>让错误尽早暴露，而不是带着错误数据继续跑</strong>。</p>
+
+        <div class="concept blue">
+          <span class="co-label">转换规则速记</span>
+          <p>同类型赋值 → 直接赋。小到大 → 自动。大到小 → 强转，可能溢出或丢精度。基本类型与字符串之间 → 不是强转，要用 <code>Integer.parseInt()</code> / <code>String.valueOf()</code> 这类转换方法。</p>
+        </div>
+
+        <hr>
+
+        <h2 id="summary"><span class="h2-num">小结</span>这一章真正要记住的</h2>
+        <div class="summary">
+          <h4>Key takeaways</h4>
+          <ol>
+            <li><strong>常量用 final，全大写命名，只赋值一次。</strong> 把「不该变的」固化下来，是降低维护成本最便宜的手段。</li>
+            <li><strong>大括号决定作用域，作用域决定生命周期。</strong> 局部变量存栈、无默认值；成员变量存堆、有默认值。</li>
+            <li><strong>八种基本类型的宽度是 1/2/4/8 字节，范围按 -2^(n-1) 推。</strong> 整数默认 int，小数默认 double，char 无符号。</li>
+            <li><strong>引用类型变量存的是地址。</strong> 赋值复制地址，两个变量指向同一对象；Java 只有值传递。</li>
+            <li><strong>自动转换只看范围是否变大，不看精度是否保留。</strong> 小于 int 的类型运算时会先提升为 int。</li>
+            <li><strong>强制转换是截断高位，不做四舍五入、不报错。</strong> 需要安全时先判断范围，或用 toIntExact。</li>
+          </ol>
+        </div>
+
+        <h2 id="quiz"><span class="h2-num">自测</span>检查一下你真的懂了吗</h2>
+        <div class="quiz">
+          <details>
+            <summary>为什么 <code>byte b = 10; b = b + 1;</code> 编译报错，而 <code>b++</code> 可以？</summary>
+            <div class="answer"><code>b + 1</code> 会提升为 int，赋回 byte 需要强转；<code>b++</code> 是自增运算符，内部隐含了强制转换，等价于 <code>b = (byte)(b + 1)</code>。</div>
+          </details>
+          <details>
+            <summary><code>(byte) 300</code> 的结果是多少？为什么？</summary>
+            <div class="answer">44。300 的二进制是 1 0010 1100，截取低 8 位得 0010 1100 = 44（即 300 - 256）。</div>
+          </details>
+          <details>
+            <summary>基本类型和引用类型在赋值时有什么本质区别？</summary>
+            <div class="answer">基本类型赋值传递值的副本，互不影响；引用类型赋值传递地址的副本，两个变量指向同一堆对象，通过任一变量修改都会反映到另一变量（String 因不可变而表现得像值类型）。</div>
+          </details>
+          <details>
+            <summary>long 是 8 字节、float 是 4 字节，为什么 long 能自动转 float 却会丢精度？</summary>
+            <div class="answer">float 用「1 位符号 + 8 位指数 + 23 位尾数」表示，范围大于 long，但有效数字只有 6~7 位十进制，尾数位不足导致低位被舍入。范围更大所以允许自动转换，精度不足所以会失真。</div>
+          </details>
+          <details>
+            <summary>成员变量和局部变量在默认值上有什么区别？背后的原因是什么？</summary>
+            <div class="answer">成员变量由 JVM 赋默认值（0、0.0、false、null），因为对象在堆上必须处于确定状态；局部变量无默认值，未赋值即使用会编译报错，借此彻底避免读取栈上的残留数据。</div>
+          </details>
+        </div>
+
+        <div class="chapter-cta">
+          <div class="txt">
+            <strong>本章结束</strong>
+            <span>标记后进度会保存在本地，下次打开自动恢复。</span>
+          </div>
+          <button class="btn btn-primary" id="markDone" type="button"></button>
+        </div>
+
+        <nav class="chapter-nav">
+          <a href="ch01.html">
+            <span class="dir">← 上一章</span>
+            <span class="ttl">01 · Java 入门</span>
+          </a>
+          <a class="next" href="ch03.html">
+            <span class="dir">下一章 →</span>
+            <span class="ttl">03 · 运算符与方法</span>
+          </a>
+        </nav>
+
+      </article>
+      <aside class="toc" data-toc></aside>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Java 学习手册 · 第 02 章</span>
+    <a href="../index.html#chapters">← 返回章节目录</a>
+  </div>
+</footer>
+
+<button class="to-top" aria-label="回到顶部">
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+</button>
+
+<script src="../assets/js/data.js?v=20261111b"></script>
+<script src="../assets/js/site.js?v=20261111b"></script>
+</body>
+</html>
