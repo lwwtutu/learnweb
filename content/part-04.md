@@ -517,7 +517,7 @@ console.log(arr.splice(1, 0, "x"))  // => []
 
 `reverse()` 反转原数组，`sort()` 排序原数组，两者返回的都是同一个数组。
 
-`sort()` 不带参数时把元素转成字符串按编码比，所以 `[11, 21, 3]` 会排成 `[11, 21, 3]`。
+`sort()` 不带参数时把元素转成字符串按编码比，所以 `[3, 10, 1]` 会排成 `[1, 10, 3]`——按字符比 `"10"` 排在 `"3"` 前面。
 
 ```js
 var arr = [11, 21, 56, 7, 3]
@@ -1090,7 +1090,7 @@ console.log(Date.now())                          // => 当前时间戳
 
 ```js
 function p(n) { return n < 10 ? "0" + n : n }
-var d = new Date()
+var d = new Date(2026, 10, 1)   // 2026 年 11 月 1 日（月份从 0 起）
 var text = d.getFullYear() + "/" + p(d.getMonth() + 1) + "/" + p(d.getDate())
 console.log(text)   // => "2026/11/01"
 ```

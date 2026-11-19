@@ -73,8 +73,19 @@
     return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line);
   }
 
+  // 按未转义的 | 切分单元格；\| 还原成字面量竖线，便于在表格里写 || 运算符
   function splitRow(line) {
-    return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); });
+    const s = line.trim().replace(/^\|/, '').replace(/\|$/, '');
+    const cells = [];
+    let cur = '';
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (ch === '\\' && s[i + 1] === '|') { cur += '|'; i++; continue; }
+      if (ch === '|') { cells.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    cells.push(cur.trim());
+    return cells;
   }
 
   let uid = 0;

@@ -305,19 +305,21 @@ no: 137
 title: 操作内容
 lessons: 166
 summary: html、text、val 三个方法读写同名，html 解析标签、text 转义、val 专管表单值
-points: html() 等价 innerHTML 会解析标签，text() 等价 innerText 当纯文本 || 用户填的内容一律用 text，只有自己拼的 HTML 才用 html || map 之后必须 join，否则数组转字符串会多出逗号 || val 读只取第一个，复选框要配 prop(checked) || 读只取第一个、写遍历全部，与前面 css 的规律一致
+points: html() 等价 innerHTML 会解析标签，text() 等价 textContent 当纯文本 || 用户填的内容一律用 text，只有自己拼的 HTML 才用 html || map 之后必须 join，否则数组转字符串会多出逗号 || val 读只取第一个，复选框要配 prop(checked) || 读只取第一个、写遍历全部，与前面 css 的规律一致
 ===BODY===
 ### 三个方法清单
 
-`html()`、`text()`、`val()` 分别对应 `innerHTML`、`innerText` 与表单的 `value`。
+`html()`、`text()`、`val()` 分别对应 `innerHTML`、`textContent` 与表单的 `value`。
 
 因为读写同名、靠是否传参区分，三个方法组成一组，覆盖了元素内容与表单值。
 
 | 方法 | 等价原生 | 传参 | 特点 |
 |---|---|---|---|
 | `.html()` / `.html(str)` | `innerHTML` | 写 | 解析成元素 |
-| `.text()` / `.text(str)` | `innerText` | 写 | 当成纯文本 |
+| `.text()` / `.text(str)` | `textContent` | 写 | 当成纯文本 |
 | `.val()` / `.val(str)` | `value` | 写 | 表单专用 |
+
+> 💡 jQuery 的 `text()` 内部读的是 `textContent` 而不是 `innerText`：前者取原始文本（含隐藏元素），不去触发浏览器排版计算，因此更快；需要「只看可见文字」时才用 `innerText`。
 
 > 💡 不传参是读、传参是写，这一点和 `css()` 完全一致，可以对照着记。
 
@@ -362,7 +364,7 @@ $("input[type=checkbox]").prop("checked")   // => true / false
 
 ### 与原生写法及读写规律
 
-原生要分清 `innerHTML`、`innerText`、`value` 三个属性，jQuery 用同名方法统一了入口。
+原生要分清 `innerHTML`、`textContent`、`value` 三个属性，jQuery 用同名方法统一了入口。
 
 因为读写共用方法名，规律仍与 `css()` 一致：写遍历全部，读只返回第一个。
 

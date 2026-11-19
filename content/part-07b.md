@@ -160,7 +160,7 @@ no: 70
 title: 事件对象
 lessons: 099
 summary: 事件对象是浏览器传入处理函数的首个参数，装着这次事件的全部细节
-points: 标准从形参取，老 IE 用 window.event，兼容写 e = e || window.event || target 是真正被点元素，currentTarget 等于 this || keyCode 已废弃，回车 13 仍需记，推荐用 e.key || 每次触发都是新对象，用完即弃别存全局 || 回车搜索靠 e 拿按键、this 拿元素、value 拿内容
+points: 标准从形参取，老 IE 用 window.event，兼容时两者取其一 || target 是真正被点元素，currentTarget 等于 this || keyCode 已废弃，回车 13 仍需记，推荐用 e.key || 每次触发都是新对象，用完即弃别存全局 || 回车搜索靠 e 拿按键、this 拿元素、value 拿内容
 ===BODY===
 ### 事件对象从哪里来
 

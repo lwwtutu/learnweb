@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="按课程顺序系统学习 JavaScript：从基础语法、BOM、DOM 到 ES6、面向对象、异步交互与 jQuery。" />
   <title>JavaScript 系统学习 · 课程笔记精编</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e76f00'/%3E%3Ctext x='16' y='22' font-size='13' font-family='monospace' font-weight='bold' text-anchor='middle' fill='%23fff'%3EJS%3C/text%3E%3C/svg%3E" />
   <script>
     /* 首屏防闪：在样式加载前先把上次选择的主题与阅读参数写到 html 上 */
     (function () {
@@ -26,7 +27,7 @@
       if (saved.width) root.setAttribute('data-width', saved.width);
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/style.css?v=20261111b" />
+  <link rel="stylesheet" href="assets/css/style.css?v=20261119" />
 </head>
 <body>
 
@@ -48,6 +49,7 @@
       <a href="#/home" data-nav="home" class="active">首页</a>
       <a href="#/roadmap" data-nav="roadmap">学习路线</a>
       <a href="#/playground" data-nav="playground">练习场</a>
+      <a href="#/notes" data-nav="notes">我的笔记</a>
     </nav>
 
     <div class="topbar-spacer"></div>
@@ -193,6 +195,10 @@
           <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/></svg>
           练习场
         </a>
+        <a href="#/notes" class="foot-link" data-nav="notes">
+          <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 6l3 3"/></svg>
+          笔记
+        </a>
       </div>
     </aside>
 
@@ -211,9 +217,10 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="assets/data/content.js?v=20261111b"></script>
-  <script src="assets/js/markdown.js?v=20261111b"></script>
-  <script src="assets/js/runner.js?v=20261111b"></script>
-  <script src="assets/js/app.js?v=20261111b"></script>
+  <script src="assets/data/content.js?v=20261119"></script>
+  <script src="assets/js/markdown.js?v=20261119"></script>
+  <script src="assets/js/runner.js?v=20261119"></script>
+  <script src="assets/js/notes.js?v=20261119"></script>
+  <script src="assets/js/app.js?v=20261119"></script>
 </body>
 </html>

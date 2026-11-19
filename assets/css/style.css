@@ -1017,6 +1017,176 @@ body.sidebar-collapsed .collapse-btn {
 body.sidebar-collapsed .collapse-label { display: inline; }
 @media (min-width: 861px) { body.sidebar-collapsed .sidebar { display: none; } }
 
+/* ============ 页面笔记 ============ */
+.notes-host { margin: 46px 0 10px; }
+.doc .content > .notes-host,
+.home .notes-host { margin-top: 46px; }
+.notes-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.notes-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+}
+.notes-plus {
+  width: 32px; height: 32px; flex: none;
+  border: 0; border-radius: 7px;
+  background: var(--accent); color: #fff;
+  display: grid; place-items: center;
+  transition: filter .16s, transform .16s;
+}
+.notes-plus .icon { width: 16px; height: 16px; stroke-width: 2.4; }
+.notes-plus:hover { filter: brightness(1.06); }
+.notes-plus:active { transform: scale(.95); }
+html[data-dark="true"] .notes-plus { color: #171a22; }
+.notes-count {
+  border: 0; background: transparent; padding: 0;
+  font-size: 14px; font-weight: 700; color: var(--text);
+  letter-spacing: -.01em;
+}
+.notes-count:hover { color: var(--accent); }
+.notes-hint { font-size: 11px; color: var(--text-3); margin-left: 2px; }
+.notes-write {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--text-2); font-size: 13px; font-weight: 600;
+  padding: 6px 9px; border-radius: 8px; transition: .16s;
+}
+.notes-write .icon { width: 15px; height: 15px; }
+.notes-write:hover { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-border); }
+
+.notes-list { border-top: 0; }
+.notes-list[hidden] { display: none !important; }
+.note-item {
+  display: flex; gap: 12px; padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.note-item:last-child { border-bottom: 0; }
+.note-avatar {
+  flex: none; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; margin-top: 2px;
+  background: var(--bg-hover); color: var(--text-3);
+  border: 1px solid var(--border);
+  font-size: 11.5px; font-weight: 700;
+}
+.note-main { flex: 1; min-width: 0; }
+.note-body { font-size: 14px; line-height: 1.78; color: var(--text-2); word-break: break-word; }
+.note-body p { margin: 0 0 8px; }
+.note-body p:last-child { margin-bottom: 0; }
+.note-body strong { color: var(--text); font-weight: 680; }
+.note-body ul, .note-body ol { margin: 0 0 8px; padding-left: 20px; }
+.note-body li { margin: 3px 0; }
+.note-body li::marker { color: var(--accent); }
+.note-body code {
+  font-family: var(--mono); font-size: .88em;
+  background: var(--accent-soft); color: var(--accent-strong);
+  border: 1px solid var(--accent-border); border-radius: 4px;
+  padding: .05em .34em;
+}
+.note-code {
+  margin: 0 0 8px; padding: 9px 12px; overflow-x: auto;
+  background: var(--code-bg); border: 1px solid var(--code-border);
+  border-radius: 8px;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+  color: var(--code-text);
+}
+.note-code code { background: none; border: 0; color: inherit; padding: 0; font-size: inherit; }
+.note-img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin: 4px 0; }
+.note-foot {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 8px; font-size: 11.5px; color: var(--text-3);
+}
+.note-ops { margin-left: auto; display: flex; gap: 4px; }
+.note-ops button {
+  border: 0; background: transparent; color: var(--text-3);
+  font-size: 11.5px; padding: 2px 6px; border-radius: 5px; transition: .15s;
+}
+.note-ops button:hover { color: var(--accent); background: var(--accent-soft); }
+.note-ops button[data-act="del"]:hover,
+.note-ops button[data-del]:hover { color: #c0392b; background: transparent; }
+
+.notes-empty {
+  padding: 18px 16px; font-size: 13px; color: var(--text-3);
+  background: var(--panel-2); text-align: center;
+}
+.notes-empty.big {
+  border: 1px dashed var(--border-strong); border-radius: var(--radius);
+  background: transparent; padding: 34px 18px; margin-bottom: 24px;
+}
+
+/* 笔记编辑器 */
+.note-editor { border-top: 1px solid var(--border); background: var(--panel); }
+.note-editor[hidden] { display: none !important; }
+.ne-tools {
+  display: flex; align-items: center; gap: 2px;
+  padding: 6px 10px; border-bottom: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+.ne-tools button {
+  width: 30px; height: 27px; border: 1px solid transparent; background: transparent;
+  color: var(--text-2); border-radius: 6px; display: grid; place-items: center;
+  transition: .15s;
+}
+.ne-tools button .icon { width: 15px; height: 15px; }
+.ne-tools button:hover { background: var(--panel); color: var(--accent); border-color: var(--border); }
+.ne-tip { margin-left: 8px; font-size: 11px; color: var(--text-3); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ne-input {
+  display: block; width: 100%; min-height: 168px; resize: vertical;
+  border: 0; outline: 0; padding: 14px 16px;
+  background: var(--panel); color: var(--text);
+  font-size: 14px; line-height: 1.78;
+  font-family: inherit;
+}
+.ne-input::placeholder { color: var(--text-3); }
+.ne-foot {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px 10px; border-top: 1px dashed var(--border);
+  background: var(--panel-2);
+}
+.ne-hint { font-size: 11.5px; color: var(--text-3); }
+.ne-save {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+  border: 0; border-radius: 7px; padding: 8px 16px;
+  background: var(--accent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 86%, #ffffff), var(--accent) 62%, var(--accent-strong));
+  color: #fff; font-size: 13px; font-weight: 650;
+  box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--accent) 85%, transparent);
+}
+html[data-dark="true"] .ne-save { color: #171a22; }
+.ne-save .icon { width: 14px; height: 14px; }
+.ne-save:hover { filter: brightness(1.05); }
+.ne-save:active { transform: scale(.985); }
+
+/* 我的笔记页 */
+.notes-group {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--panel); box-shadow: var(--shadow-sm);
+  overflow: hidden; margin-bottom: 16px;
+}
+.notes-group .notes-list { border-top: 0; }
+.ng-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; background: var(--bg-soft);
+  border-bottom: 1px solid var(--border);
+}
+.ng-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.ng-title:hover { color: var(--accent); }
+.ng-count { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+.ng-go { margin-left: auto; font-size: 12px; color: var(--accent); }
+.notes-foot-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border);
+  font-size: 12.5px; color: var(--text-3);
+}
+.notes-foot-bar .btn { height: 34px; font-size: 12.5px; }
+
+.section-head .aside a { color: var(--accent); font-weight: 600; }
+
 /* ============ 响应式 ============ */
 @media (max-width: 1240px) {
   .doc-with-toc.is-reader { padding: 34px 34px 80px; gap: 30px; }
@@ -1200,4 +1370,15 @@ html[data-code-bg="light"][data-code-ink="mono"] {
 .point { font-size: calc(var(--f-prose) - 2px); }
 .toc-item { font-size: calc(var(--f-prose) - 3px); }
 .search-hit b { font-size: calc(var(--f-prose) - 2.5px); }
-@media (max-width: 860px) { .side-expand { display: none !important; } }
+@media (max-width: 860px) {
+  .side-expand { display: none !important; }
+  .notes-hint, .ne-tip { display: none; }
+  .notes-write { padding: 6px; }
+  .note-item { padding: 12px 12px; gap: 10px; }
+  .note-avatar { width: 28px; height: 28px; }
+  .ne-foot { flex-wrap: wrap; }
+  .ne-hint { order: 2; width: 100%; }
+  /* 正文行内代码在窄屏允许折行，避免把页面撑出横向滚动 */
+  .prose :not(pre) > code,
+  .prose td code, .prose th code { white-space: normal; overflow-wrap: anywhere; }
+}

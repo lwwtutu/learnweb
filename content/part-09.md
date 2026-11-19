@@ -457,8 +457,8 @@ this.tabs[i].addEventListener(this.type, () => {
 no: 102
 title: ES6-class
 lessons: 131
-summary: class 是构造函数加原型的语法糖，方法自动挂原型、强制 new、不提升
-points: class 本质是函数，typeof 仍是 function || constructor 等同原函数体，且只能有一个 || 方法自动挂 prototype 且不可枚举 || 类里方法之间不加逗号，不是对象字面量 || class 不提升、强制 new、内部自动严格模式
+summary: class 是构造函数加原型的语法糖，方法自动挂原型、强制 new、声明前不可用
+points: class 本质是函数，typeof 仍是 function || constructor 等同原函数体，且只能有一个 || 方法自动挂 prototype 且不可枚举 || 类里方法之间不加逗号，不是对象字面量 || class 声明前处于 TDZ、强制 new、内部自动严格模式
 ===BODY===
 ### class 是构造函数加原型的语法糖
 
@@ -529,14 +529,14 @@ console.log(Object.keys(CreateObj.prototype))   // => []
 
 `export default Tabs` 这类导出语句也不变，这就是等价关系最实际的价值。
 
-### class 不会提升，且强制 new
+### class 声明前不能用，且强制 new
 
-`class` 声明不会提升，存在暂时性死区；不用 `new` 调用直接报错，类内部还自动是严格模式。
+`class` 声明同样会被提升，但提升后落在暂时性死区里，声明之前访问一律抛 `ReferenceError`；不用 `new` 调用直接报错，类内部还自动是严格模式。
 
-因为引擎把"忘写 `new` 污染全局"这个坑从语法上堵死了，比构造函数靠自律安全得多。提前使用得到 `ReferenceError`，而不是 `undefined`。
+因为引擎把"忘写 `new` 污染全局"这个坑从语法上堵死了，比构造函数靠自律安全得多。提前使用得到的是 `ReferenceError`，而不是 `undefined`——这正是「绑定已存在、值还没初始化」的表现。
 
 ```js
-var o = new CreateObj()   // => ReferenceError: Cannot access before initialization
+var o = new CreateObj()   // => ReferenceError: Cannot access 'CreateObj' before initialization
 class CreateObj {}
 class B {}
 B()   // => TypeError: Class constructor B cannot be invoked without 'new'
@@ -545,7 +545,7 @@ B()   // => TypeError: Class constructor B cannot be invoked without 'new'
 | 差异 | 构造函数 | `class` |
 |---|---|---|
 | 必须 `new` | 不强制 | 强制 |
-| 变量提升 | 有 | 没有，TDZ |
+| 变量提升 | 有，声明前即可用 | 有，但声明前处于 TDZ |
 | 严格模式 | 默认非严格 | 自动严格 |
 | 方法可枚举 | 是 | 否 |
 | `typeof` | `"function"` | `"function"` |

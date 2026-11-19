@@ -65,10 +65,10 @@
     appearance.theme = legacyBg[appearance.bg] || 'warm';
   }
   delete appearance.bg;
-  delete appearance.ink;
   delete appearance.tone;
   delete appearance.dark;
   delete appearance.scheme;
+  // 注意：ink 必须保留，旧版本里非法的取值由下面这行校验纠正，不能在这里删掉
   if (!/^(auto|black|gray|brown|navy)$/.test(appearance.ink)) appearance.ink = 'auto';
   if (!/^(dark|black|navy|light)$/.test(appearance.codeBg)) appearance.codeBg = 'dark';
   if (!/^(default|bright|soft|mono)$/.test(appearance.codeInk)) appearance.codeInk = 'default';
@@ -158,6 +158,7 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
   }
+  window.toast = toast;   // 供笔记模块复用同一个轻提示
   function esc(s) { return window.MD.escapeHtml(String(s == null ? '' : s)); }
   function icon(path) { return '<svg viewBox="0 0 24 24" class="icon" aria-hidden="true">' + path + '</svg>'; }
   const ICON = {
@@ -384,6 +385,13 @@
     '</div>';
   }
 
+  // ---------- 笔记 ----------
+  function mountNotes(page, title) {
+    if (!window.Notes) return;
+    const host = $('.notes-host[data-page="' + page + '"]', view);
+    if (host) window.Notes.mount(host, page, title);
+  }
+
   // ---------- 首页 ----------
   function renderHome() {
     const total = chapters.length;
@@ -454,10 +462,20 @@
         '<div class="tips-grid">' +
           '<div class="tip-card"><div class="ico">01</div><h4>按顺序读</h4><p>左侧目录即学习顺序。每章开头是「本章速记」，正文按概念引入的先后展开，右侧目录可跳到任意小节。</p></div>' +
           '<div class="tip-card"><div class="ico">02</div><h4>亲手跑一遍</h4><p>每个代码块都能点「运行」，直接在隔离沙箱里看到 console 输出；也可以去练习场自由试。</p></div>' +
-          '<div class="tip-card"><div class="ico">03</div><h4>留下进度</h4><p>学完一章点右上角「标记已学」，进度保存在本机，首页卡片会同步显示每篇完成了多少章。</p></div>' +
+          '<div class="tip-card"><div class="ico">03</div><h4>留下进度与笔记</h4><p>学完一章点右上角「标记已学」；每个页面底部都能写笔记，进度与笔记都保存在本机。</p></div>' +
         '</div>' +
       '</section>' +
+
+      '<section class="section-block" id="my-notes" style="margin-top:44px">' +
+        '<div class="section-head">' +
+          '<div><h2>我的笔记</h2><p>首页与每一章都有各自的笔记区，学完随手记，比回头翻正文快。全部笔记可在「我的笔记」页统一查看。</p></div>' +
+          '<div class="aside"><a href="#/notes">查看全部笔记 →</a></div>' +
+        '</div>' +
+        '<div class="notes-host" data-page="home"></div>' +
+      '</section>' +
     '</div>';
+
+    mountNotes('home', '首页 · 我的笔记');
 
     buildToc([]);
     window.scrollTo(0, 0);
@@ -487,8 +505,9 @@
       });
       html += '</tbody></table></div>' + gapHtml(p.order);
     });
-    html += '</div>';
+    html += '<div class="notes-host" data-page="roadmap"></div>' + '</div>';
     view.innerHTML = html;
+    mountNotes('roadmap', '学习路线');
     buildToc([]);
     window.scrollTo(0, 0);
     $$('.nav-ch', sideNav).forEach((a) => a.classList.remove('active'));
@@ -553,8 +572,10 @@
           (next ? '<a class="cnav next" href="#/ch/' + next.no + '"><small>下一章 · 第 ' + next.no + ' 章 →</small><strong>' + esc(next.title) + '</strong></a>' : '<div class="cnav empty"></div>') +
         '</nav>' +
       '</article>' +
+      '<div class="notes-host" data-page="ch/' + no + '"></div>' +
     '</div>';
 
+    mountNotes('ch/' + no, '第 ' + no + ' 章 · ' + c.title);
     buildToc(headings);
     LS.set('last', no);
     expandPart(c.partId);
@@ -593,7 +614,9 @@
         '</div>' +
         '<div class="play-out" id="playOut"><div class="out-head">Console 输出</div><div class="out-body"><div class="run-line sys">点击「运行」查看结果</div></div></div>' +
       '</div>' +
+      '<div class="notes-host" data-page="playground"></div>' +
     '</div>';
+    mountNotes('playground', '代码练习场');
     buildToc([]);
     $('#playEditor').value = DEMO;
     const editor = $('#playEditor');
@@ -614,6 +637,81 @@
     window.scrollTo(0, 0);
     $$('.nav-ch', sideNav).forEach((a) => a.classList.remove('active'));
   }
+
+  // ---------- 我的笔记（汇总页） ----------
+  function renderNotesPage() {
+    setNavActive('notes');
+    doneBtn.hidden = true;
+
+    const all = window.Notes ? window.Notes.all() : [];
+    const groups = [];
+    const seen = new Map();
+    all.slice()
+      .sort((a, b) => (b.updated || b.created) - (a.updated || a.created))
+      .forEach((n) => {
+        if (!seen.has(n.page)) {
+          const g = { page: n.page, title: n.pageTitle || n.page, items: [] };
+          seen.set(n.page, g);
+          groups.push(g);
+        }
+        seen.get(n.page).items.push(n);
+      });
+
+    const href = (page) => '#/' + page;
+    const body = all.length
+      ? groups.map((g) => (
+          '<section class="notes-group">' +
+            '<div class="ng-head">' +
+              '<a class="ng-title" href="' + href(g.page) + '">' + esc(g.title) + '</a>' +
+              '<span class="ng-count">' + g.items.length + ' 篇</span>' +
+              '<a class="ng-go" href="' + href(g.page) + '">去这一页 →</a>' +
+            '</div>' +
+            '<div class="notes-list">' +
+              g.items.map((n) => (
+                '<article class="note-item" data-id="' + n.id + '">' +
+                  '<span class="note-avatar" aria-hidden="true">我</span>' +
+                  '<div class="note-main">' +
+                    '<div class="note-body">' + (window.Notes ? window.Notes.renderText(n.text) : esc(n.text)) + '</div>' +
+                    '<div class="note-foot"><time>' + esc(window.Notes.fmtTime(n.updated || n.created)) + '</time>' +
+                      '<span class="note-ops"><button type="button" data-del="' + n.id + '">删除</button></span>' +
+                    '</div>' +
+                  '</div>' +
+                '</article>'
+              )).join('') +
+            '</div>' +
+          '</section>'
+        )).join('')
+      : '<div class="notes-empty big">还没有任何笔记。进入任意一章，页面底部就有「写笔记」入口。</div>';
+
+    view.innerHTML = '<div class="content">' +
+      '<div class="eyebrow">My Notes</div>' +
+      '<h1 class="page-title">我的笔记</h1>' +
+      '<p class="page-lead">共 <b>' + all.length + '</b> 篇，分散在 ' + groups.length + ' 个页面。笔记只保存在本机浏览器，换设备或清除站点数据都会丢失，重要的内容建议再抄一份。</p>' +
+      body +
+      (all.length ? '<div class="notes-foot-bar"><span>笔记数：' + all.length + '</span><button type="button" class="btn btn-ghost" id="notesClearAll">清空全部笔记</button></div>' : '') +
+    '</div>';
+
+    buildToc([]);
+    window.scrollTo(0, 0);
+    $$('.nav-ch', sideNav).forEach((a) => a.classList.remove('active'));
+  }
+
+  view.addEventListener('click', (e) => {
+    const del = e.target.closest('[data-del]');
+    if (del && window.Notes) {
+      if (!window.confirm('删除这条笔记？删除后不可恢复。')) return;
+      window.Notes.remove(del.dataset.del);
+      renderNotesPage();
+      toast('已删除');
+      return;
+    }
+    if (e.target.id === 'notesClearAll' && window.Notes) {
+      if (!window.confirm('清空全部笔记？此操作不可恢复。')) return;
+      window.Notes.clear();
+      renderNotesPage();
+      toast('已清空全部笔记');
+    }
+  });
 
   // ---------- 代码块交互（事件委托） ----------
   function copyText(text) {
@@ -748,6 +846,7 @@
     if (m) renderChapter(Number(m[1]));
     else if (hash.indexOf('#/playground') === 0) renderPlayground();
     else if (hash.indexOf('#/roadmap') === 0) renderRoadmap();
+    else if (hash.indexOf('#/notes') === 0) renderNotesPage();
     else renderHome();
     hideSearch();
     closeSidebar();
@@ -764,7 +863,8 @@
 
   // ---------- 键盘快捷键 ----------
   document.addEventListener('keydown', (e) => {
-    const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+    const el = document.activeElement;
+    const typing = !!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable);
     if (e.key === '/' && !typing) { e.preventDefault(); searchInput.focus(); return; }
     if (e.key === 'Escape') { closeSidebar(); hideSearch(); return; }
     if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
