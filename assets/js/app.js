@@ -168,6 +168,7 @@
     arrowR: '<path d="M9 5l7 7-7 7"/>',
     play: '<path d="M7 4l12 8-12 8z"/>',
     bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    download: '<path d="M12 4v10M8 10l4 4 4-4M5 19h14"/>',
   };
 
   // 顶栏与侧栏底部的导航高亮
@@ -657,6 +658,17 @@
         seen.get(n.page).items.push(n);
       });
 
+    // 分组顺序跟学习顺序（章号）走，非章节页面排在最后；与导出文件的顺序保持一致
+    if (window.Notes && window.Notes.pageMeta) {
+      groups.forEach((g) => {
+        const meta = window.Notes.pageMeta(g.page, g.title);
+        g.meta = meta;
+        if (meta.title) g.title = meta.title;
+      });
+      groups.sort((a, b) => (a.meta.order - b.meta.order) || a.title.localeCompare(b.title, 'zh'));
+    }
+    groups.forEach((g) => g.items.sort((a, b) => (b.updated || b.created) - (a.updated || a.created)));
+
     const href = (page) => '#/' + page;
     const body = all.length
       ? groups.map((g) => (
@@ -686,7 +698,13 @@
     view.innerHTML = '<div class="content">' +
       '<div class="eyebrow">My Notes</div>' +
       '<h1 class="page-title">我的笔记</h1>' +
-      '<p class="page-lead">共 <b>' + all.length + '</b> 篇，分散在 ' + groups.length + ' 个页面。笔记只保存在本机浏览器，换设备或清除站点数据都会丢失，重要的内容建议再抄一份。</p>' +
+      '<p class="page-lead">共 <b>' + all.length + '</b> 篇，分散在 ' + groups.length + ' 个页面。笔记只保存在本机浏览器，换设备或清除站点数据都会丢失，重要的内容建议导出后再抄一份。</p>' +
+      (all.length
+        ? '<div class="notes-toolbar">' +
+            '<span>导出的 Markdown 会带上章号、所属篇与课次，方便对照原文复习</span>' +
+            '<button type="button" class="btn btn-primary" id="notesExportAll">' + icon(ICON.download) + '导出全部笔记</button>' +
+          '</div>'
+        : '') +
       body +
       (all.length ? '<div class="notes-foot-bar"><span>笔记数：' + all.length + '</span><button type="button" class="btn btn-ghost" id="notesClearAll">清空全部笔记</button></div>' : '') +
     '</div>';
@@ -697,6 +715,10 @@
   }
 
   view.addEventListener('click', (e) => {
+    if (e.target.closest('#notesExportAll') && window.Notes) {
+      window.Notes.exportNotes();
+      return;
+    }
     const del = e.target.closest('[data-del]');
     if (del && window.Notes) {
       if (!window.confirm('删除这条笔记？删除后不可恢复。')) return;

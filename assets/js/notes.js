@@ -29,6 +29,37 @@
       ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
 
+  function stamp(ts) {
+    const d = new Date(ts || Date.now());
+    const p = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+  }
+
+  // 页面 → 章节信息（篇名、章号、课次），用于导出时标注来源
+  function pageMeta(page, fallbackTitle) {
+    const meta = { page: page, link: '#/' + page, title: fallbackTitle || page, part: '', lessons: '', order: 10000 };
+    const m = /^ch\/(\d+)$/.exec(String(page));
+    const data = global.COURSE_DATA;
+    if (m && data && Array.isArray(data.parts)) {
+      const no = Number(m[1]);
+      for (let i = 0; i < data.parts.length; i++) {
+        const p = data.parts[i];
+        const c = (p.chapters || []).find((x) => Number(x.no) === no);
+        if (c) {
+          meta.title = '第 ' + no + ' 章 · ' + c.title;
+          meta.part = '第 ' + String(p.order).padStart(2, '0') + ' 篇 · ' + p.title;
+          meta.lessons = c.lessons || '';
+          meta.order = no;
+          return meta;
+        }
+      }
+    }
+    const fixed = { home: '首页', roadmap: '学习路线', playground: '代码练习场', notes: '我的笔记' };
+    meta.title = fixed[page] || fallbackTitle || page;
+    meta.order = 10000;
+    return meta;
+  }
+
   // ---------- 存储 ----------
   function readAll() {
     try {
@@ -72,6 +103,102 @@
 
   function clear() {
     return writeAll([]);
+  }
+
+  // ---------- 导出 ----------
+  function groupByPage(list) {
+    const map = new Map();
+    list.forEach((n) => {
+      if (!map.has(n.page)) map.set(n.page, { page: n.page, meta: pageMeta(n.page, n.pageTitle), items: [] });
+      map.get(n.page).items.push(n);
+    });
+    const groups = [...map.values()];
+    // 页内按写作时间正序，页面本身按章号排序，复习时顺序与学习顺序一致
+    groups.forEach((g) => g.items.sort((a, b) => (a.created || 0) - (b.created || 0)));
+    groups.sort((a, b) => (a.meta.order - b.meta.order) || a.meta.title.localeCompare(b.meta.title, 'zh'));
+    return groups;
+  }
+
+  function buildMarkdown(list, scope) {
+    const groups = groupByPage(list);
+    const lines = [];
+    lines.push('# JavaScript 系统学习 · 笔记导出');
+    lines.push('');
+    lines.push('> 导出范围：' + (scope || '全部笔记'));
+    lines.push('> 导出时间：' + fmtTime(Date.now()));
+    lines.push('> 笔记数量：' + list.length + ' 篇，覆盖 ' + groups.length + ' 个页面');
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+    groups.forEach((g) => {
+      lines.push('## ' + g.meta.title);
+      lines.push('');
+      if (g.meta.part) lines.push('- 所属篇：' + g.meta.part);
+      if (/^ch\//.test(g.page)) lines.push('- 章号：第 ' + g.meta.order + ' 章');
+      if (g.meta.lessons) lines.push('- 课次：' + g.meta.lessons);
+      lines.push('- 页面位置：' + g.meta.link);
+      lines.push('- 本页笔记：' + g.items.length + ' 篇');
+      lines.push('');
+      g.items.forEach((n, i) => {
+        const created = n.created || n.updated;
+        lines.push('### ' + (i + 1) + '. ' + fmtTime(created));
+        lines.push('');
+        if (n.updated && created && n.updated - created > 60000) {
+          lines.push('_最后修改：' + fmtTime(n.updated) + '_');
+          lines.push('');
+        }
+        lines.push(String(n.text).trim());
+        lines.push('');
+      });
+      lines.push('---');
+      lines.push('');
+    });
+    lines.push('');
+    lines.push('> 由「JavaScript 系统学习」站点导出，笔记原本保存在浏览器本地。');
+    return lines.join('\n').replace(/\n{4,}/g, '\n\n\n');
+  }
+
+  function download(name, text) {
+    try {
+      // 加 BOM，避免 Windows 记事本把中文识别成乱码
+      const blob = new Blob(['\ufeff' + text], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () {
+        URL.revokeObjectURL(url);
+        if (a.parentNode) a.parentNode.removeChild(a);
+      }, 500);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * 导出笔记为 Markdown 文件
+   * @param {string} [page] 传页面标识只导出该页，不传则导出全部
+   * @returns {number} 导出的笔记条数
+   */
+  function exportNotes(page) {
+    const all = readAll();
+    const list = page ? all.filter((n) => n.page === page) : all;
+    if (!list.length) {
+      toast(page ? '这一页还没有笔记' : '还没有笔记可以导出');
+      return 0;
+    }
+    const scope = page ? '仅「' + pageMeta(page, list[0].pageTitle).title + '」' : '全部页面';
+    const name = (page ? 'js-notes-' + String(page).replace(/[^\w]+/g, '-') : 'js-notes-all') + '-' + stamp() + '.md';
+    if (!download(name, buildMarkdown(list, scope))) {
+      toast('导出失败，请检查浏览器是否允许下载文件');
+      return 0;
+    }
+    toast('已导出 ' + list.length + ' 篇笔记（' + name + '）');
+    return list.length;
   }
 
   // ---------- 笔记内容渲染（只支持少量安全语法） ----------
@@ -154,6 +281,7 @@
     ul: '<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.2"/><circle cx="4" cy="12" r="1.2"/><circle cx="4" cy="18" r="1.2"/>',
     ol: '<path d="M9 6h11M9 12h11M9 18h11M4 5l1.4-.8V8"/><path d="M4 15.2c0-.7.9-1.1 1.5-.7.8.5.4 1.6-.6 2.5H5.2"/>',
     img: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M4 17l5-4 4 3 3-2 4 4"/>',
+    download: '<path d="M12 4v10M8 10l4 4 4-4M5 19h14"/>',
   };
 
   function svg(path, cls) {
@@ -198,7 +326,10 @@
         '<button type="button" class="notes-plus" data-act="toggle" aria-label="展开或收起笔记" title="展开 / 收起笔记">' + svg(ICON.plus) + '</button>' +
         '<button type="button" class="notes-count" data-act="toggle">' + notes.length + ' 篇笔记</button>' +
         '<span class="notes-hint">仅保存在本机浏览器</span>' +
-        '<button type="button" class="notes-write" data-act="write">' + svg(ICON.pen) + '写笔记</button>' +
+        '<span class="notes-actions">' +
+          '<button type="button" class="notes-export" data-act="export" title="导出本页笔记" aria-label="导出本页笔记">' + svg(ICON.download) + '</button>' +
+          '<button type="button" class="notes-write" data-act="write">' + svg(ICON.pen) + '写笔记</button>' +
+        '</span>' +
       '</div>' +
       '<div class="notes-list" hidden>' + listHtml(notes) + '</div>' +
       '<div class="note-editor" hidden>' +
@@ -221,12 +352,14 @@
     const editorEl = $('.note-editor', host);
     const input = $('.ne-input', host);
     const countBtn = $('.notes-count', host);
+    const exportBtn = $('.notes-export', host);
     let editingId = null;
 
     function refreshList() {
       const arr = forPage(page);
       listEl.innerHTML = listHtml(arr);
       countBtn.textContent = arr.length + ' 篇笔记';
+      if (exportBtn) exportBtn.hidden = !arr.length;
       return arr;
     }
 
@@ -297,6 +430,10 @@
         openEditor(draft);
         return;
       }
+      if (act === 'export') {
+        exportNotes(page);
+        return;
+      }
       if (act === 'save') {
         const text = input.value.trim();
         if (text.length < 2) { toast('笔记内容太短，再写两句吧'); input.focus(); return; }
@@ -344,6 +481,7 @@
       if (ev.key === 'Escape') { ev.stopPropagation(); }
     });
 
+    if (exportBtn) exportBtn.hidden = !notes.length;
     if (notes.length) openList(true);
   }
 
@@ -355,6 +493,9 @@
     clear: clear,
     renderText: renderText,
     fmtTime: fmtTime,
+    exportNotes: exportNotes,
+    buildMarkdown: buildMarkdown,
+    pageMeta: pageMeta,
     pageTitleOf: function (page) {
       const hit = readAll().find((n) => n.page === page);
       return hit ? hit.pageTitle : page;
