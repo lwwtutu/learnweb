@@ -169,6 +169,7 @@
     play: '<path d="M7 4l12 8-12 8z"/>',
     bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
     download: '<path d="M12 4v10M8 10l4 4 4-4M5 19h14"/>',
+    upload: '<path d="M12 20V10M8 14l4-4 4 4M5 5h14"/>',
   };
 
   // 顶栏与侧栏底部的导航高亮
@@ -693,21 +694,37 @@
             '</div>' +
           '</section>'
         )).join('')
-      : '<div class="notes-empty big">还没有任何笔记。进入任意一章，页面底部就有「写笔记」入口。</div>';
+      : '<div class="notes-empty big">还没有任何笔记。进入任意一章，页面底部就有「写笔记」入口；如果之前导出过备份，点上面的「导入笔记」就能一次恢复。</div>';
 
     view.innerHTML = '<div class="content">' +
       '<div class="eyebrow">My Notes</div>' +
       '<h1 class="page-title">我的笔记</h1>' +
-      '<p class="page-lead">共 <b>' + all.length + '</b> 篇，分散在 ' + groups.length + ' 个页面。笔记只保存在本机浏览器，换设备或清除站点数据都会丢失，重要的内容建议导出后再抄一份。</p>' +
-      (all.length
-        ? '<div class="notes-toolbar">' +
-            '<span>导出的 Markdown 会带上章号、所属篇与课次，方便对照原文复习</span>' +
-            '<button type="button" class="btn btn-primary" id="notesExportAll">' + icon(ICON.download) + '导出全部笔记</button>' +
-          '</div>'
-        : '') +
+      '<p class="page-lead">共 <b>' + all.length + '</b> 篇，分散在 ' + groups.length + ' 个页面。笔记只保存在本机浏览器，换设备或清除站点数据都会丢失，重要的内容建议导出备份，或换设备后用导入恢复。</p>' +
+      '<div class="notes-toolbar">' +
+        '<span>导出的 Markdown 会带上章号、所属篇与课次；导入同一份文件不会产生重复笔记</span>' +
+        '<span class="nt-actions">' +
+          '<button type="button" class="btn btn-ghost" id="notesImport">' + icon(ICON.upload) + '导入笔记</button>' +
+          (all.length ? '<button type="button" class="btn btn-primary" id="notesExportAll">' + icon(ICON.download) + '导出全部笔记</button>' : '') +
+        '</span>' +
+      '</div>' +
+      '<input type="file" id="notesFile" accept=".md,.markdown,.txt,.json" hidden />' +
       body +
       (all.length ? '<div class="notes-foot-bar"><span>笔记数：' + all.length + '</span><button type="button" class="btn btn-ghost" id="notesClearAll">清空全部笔记</button></div>' : '') +
     '</div>';
+
+    const fileInput = $('#notesFile');
+    if (fileInput) {
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file || !window.Notes) return;
+        window.Notes.importFile(file).then((res) => {
+          fileInput.value = '';
+          if (res.error) { toast(res.error); return; }
+          toast('导入完成：新增 ' + res.added + ' 篇' + (res.skipped ? '，跳过重复 ' + res.skipped + ' 篇' : ''));
+          renderNotesPage();
+        });
+      });
+    }
 
     buildToc([]);
     window.scrollTo(0, 0);
@@ -717,6 +734,11 @@
   view.addEventListener('click', (e) => {
     if (e.target.closest('#notesExportAll') && window.Notes) {
       window.Notes.exportNotes();
+      return;
+    }
+    if (e.target.closest('#notesImport')) {
+      const input = $('#notesFile');
+      if (input) input.click();
       return;
     }
     const del = e.target.closest('[data-del]');

@@ -1201,6 +1201,7 @@ html[data-dark="true"] .ne-save { color: #171a22; }
 }
 .notes-toolbar > span { min-width: 0; }
 .notes-toolbar .btn { height: 36px; font-size: 13px; flex: none; }
+.nt-actions { display: flex; align-items: center; gap: 8px; flex: none; }
 
 .section-head .aside a { color: var(--accent); font-weight: 600; }
 
@@ -1393,6 +1394,8 @@ html[data-code-bg="light"][data-code-ink="mono"] {
   .notes-write { padding: 6px; }
   .notes-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
   .notes-toolbar .btn { justify-content: center; }
+  .nt-actions { gap: 8px; }
+  .nt-actions .btn { flex: 1; }
   .note-item { padding: 12px 12px; gap: 10px; }
   .note-avatar { width: 28px; height: 28px; }
   .ne-foot { flex-wrap: wrap; }

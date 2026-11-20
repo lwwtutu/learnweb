@@ -201,6 +201,151 @@
     return list.length;
   }
 
+  // ---------- 导入 ----------
+  function parseTime(s) {
+    const m = /(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})/.exec(String(s || ''));
+    if (!m) return 0;
+    return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime();
+  }
+
+  function cleanBody(body) {
+    let s = String(body || '').replace(/\r\n/g, '\n');
+    s = s.replace(/\n*> 由「[^\n]*站点导出[\s\S]*$/, '');   // 文件尾注
+    s = s.replace(/\n+-{3,}\s*$/, '');                    // 分节线
+    return s.trim();
+  }
+
+  // 解析本站在「我的笔记」页导出的 Markdown
+  function parseMarkdown(text) {
+    const lines = String(text).replace(/\r\n/g, '\n').split('\n');
+    const notes = [];
+    let page = '';
+    let title = '';
+    let created = 0;
+    let updated = 0;
+    let buf = [];
+    let inNote = false;
+
+    const flush = () => {
+      if (!inNote) return;
+      const body = cleanBody(buf.join('\n'));
+      if (page && body) {
+        notes.push({
+          page: page,
+          pageTitle: title,
+          text: body,
+          created: created || Date.now(),
+          updated: updated || created || Date.now(),
+        });
+      }
+      buf = [];
+      inNote = false;
+      created = 0;
+      updated = 0;
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.indexOf('## ') === 0 && line.indexOf('### ') !== 0) {
+        flush();
+        page = '';
+        title = line.slice(3).trim();
+        continue;
+      }
+      if (/^###\s+\d+\./.test(line)) {
+        flush();
+        inNote = true;
+        created = parseTime(line.replace(/^###\s+\d+\./, ''));
+        continue;
+      }
+      if (inNote) {
+        const upd = /^_最后修改：(.+?)_\s*$/.exec(line);
+        if (upd) { updated = parseTime(upd[1]); continue; }
+        buf.push(line);
+        continue;
+      }
+      // 分组下的元信息行
+      let m = /^-\s*页面位置[:：]\s*(?:#\/)?(\S+)\s*$/.exec(line);
+      if (m) { page = m[1]; continue; }
+      m = /^-\s*章号[:：]\s*第\s*(\d+)\s*章/.exec(line);
+      if (m && !page) { page = 'ch/' + m[1]; }
+    }
+    flush();
+    return notes;
+  }
+
+  // 兼容 JSON 备份：[{ page, pageTitle, text, created, updated }]
+  function parseJson(text) {
+    const data = JSON.parse(text);
+    if (!Array.isArray(data)) throw new Error('不是数组');
+    return data
+      .filter((n) => n && typeof n.text === 'string' && n.text.trim())
+      .map((n) => ({
+        page: String(n.page || 'home'),
+        pageTitle: String(n.pageTitle || ''),
+        text: String(n.text).trim(),
+        created: Number(n.created) || Date.now(),
+        updated: Number(n.updated) || Number(n.created) || Date.now(),
+      }));
+  }
+
+  /**
+   * 导入笔记文本（合并到现有笔记，重复内容跳过）
+   * @param {string} text 文件内容
+   * @returns {{added:number, skipped:number, total:number, error?:string}}
+   */
+  function importText(text) {
+    const raw = String(text || '').replace(/^\ufeff/, '').trim();
+    if (!raw) return { added: 0, skipped: 0, total: 0, error: '文件是空的' };
+
+    let incoming;
+    if (/^[[{]/.test(raw)) {
+      try { incoming = parseJson(raw); }
+      catch (e) { return { added: 0, skipped: 0, total: 0, error: 'JSON 格式无法解析' }; }
+    } else {
+      incoming = parseMarkdown(raw);
+    }
+    if (!incoming.length) {
+      return { added: 0, skipped: 0, total: 0, error: '没有识别到笔记，请确认是本站在「我的笔记」导出的文件' };
+    }
+
+    const list = readAll();
+    const seen = new Set(list.map((n) => n.page + '\u0000' + String(n.text).trim().replace(/\s+/g, ' ')));
+    let added = 0;
+    let skipped = 0;
+    incoming.forEach((n) => {
+      const key = n.page + '\u0000' + n.text.replace(/\s+/g, ' ');
+      if (seen.has(key)) { skipped++; return; }
+      seen.add(key);
+      list.push({
+        id: uid(),
+        page: n.page,
+        pageTitle: n.pageTitle || pageMeta(n.page).title,
+        text: n.text,
+        created: n.created,
+        updated: n.updated,
+      });
+      added++;
+    });
+
+    if (added && !writeAll(list)) return { added: 0, skipped: skipped, total: incoming.length, error: '保存失败：本机存储空间不足' };
+    return { added: added, skipped: skipped, total: incoming.length };
+  }
+
+  function importFile(file) {
+    return new Promise((resolve) => {
+      if (!file) { resolve({ added: 0, skipped: 0, total: 0, error: '没有选择文件' }); return; }
+      if (file.size > 5 * 1024 * 1024) { resolve({ added: 0, skipped: 0, total: 0, error: '文件太大（超过 5 MB）' }); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try { resolve(importText(String(reader.result || ''))); }
+        catch (e) { resolve({ added: 0, skipped: 0, total: 0, error: '读取失败：' + e.message }); }
+      };
+      reader.onerror = () => resolve({ added: 0, skipped: 0, total: 0, error: '读取文件失败' });
+      reader.readAsText(file, 'utf-8');
+    });
+  }
+
   // ---------- 笔记内容渲染（只支持少量安全语法） ----------
   const SAFE_IMG = /^(https?:\/\/|data:image\/)/i;
 
@@ -494,6 +639,8 @@
     renderText: renderText,
     fmtTime: fmtTime,
     exportNotes: exportNotes,
+    importFile: importFile,
+    importText: importText,
     buildMarkdown: buildMarkdown,
     pageMeta: pageMeta,
     pageTitleOf: function (page) {
