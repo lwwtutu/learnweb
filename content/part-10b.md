@@ -48,6 +48,20 @@ p.catch(err => console.log(err))
 
 > ⚠️ 只有 resolve 或 reject 被调用，Promise 才会有结果；一直不调用就永远停在 pending。
 
+把三处 `console.log` 放一起，能看清哪段同步、哪段延后：
+
+```js
+var q = new Promise(function (resolve, reject) {
+    console.log("Promise 里的代码")     // ① 立刻执行
+    resolve("ok")
+})
+console.log("外面")
+q.then(res => console.log("then 里"))
+// 输出顺序：Promise 里的代码 → 外面 → then 里
+```
+
+执行器在创建时立即跑完，`then` 被排到微任务，等外层同步代码结束后才执行。
+
 ### then 的返回值与链式
 
 then 每次都返回一个新的 Promise，这正是能一路 .then 接下去的原因。
@@ -183,6 +197,16 @@ then 里若忘记 return 下一个 pajax，后续 then 会立刻执行并拿到 
 
 > ⚠️ 永久 pending 是 Promise 唯一的「静默失败」形态，排查时先确认底层回调是否补齐 onerror 与 ontimeout。
 
+补齐网络层回调，才能让失败也走到 reject：
+
+```js
+xhr.onerror = () => error("网络错误")
+xhr.ontimeout = () => error("请求超时")
+xhr.timeout = 10000
+```
+
+跨域被拦、断网或超过 10 秒时，`error` 被调用，Promise 转为 rejected，链尾的 `catch` 才有机会执行。
+
 ===CH===
 no: 118
 title: Promise 版 ajax 案例
@@ -286,6 +310,24 @@ await 后面也可以接普通值，此时直接拿到值本身；接 Promise �
 拆开看是四步：先执行表达式拿到 Promise，再挂起函数让出控制权，等它兑现后把值赋给变量，最后从挂起处继续往下跑。
 
 两个高频误用：漏写 await 会拿到 Promise 对象而非数据；forEach 不会等待 async 回调，要串行得改用 for...of。
+
+`forEach` 不会等回调里的 `await`，后面的日志会抢先打印：
+
+```js
+async function loadAll(items) {
+    items.forEach(async item => {
+        await pajax({ url: `/detail/${item.id}` })
+    })
+    console.log("全都发完了？没有")
+
+    // 用 for...of 才能真的一个等一个
+    for (const item of items) {
+        await pajax({ url: `/detail/${item.id}` })
+    }
+}
+```
+
+`forEach` 只是把 async 回调挨个调一遍，不收集它们返回的 Promise；`for...of` 里的 `await` 才会逐个挂起等待。
 
 ### await 暂停的是函数，不是线程
 
@@ -459,6 +501,21 @@ fetch 更简洁，但并非处处替代 XHR，两者的能力边界并不相同�
 | IE 兼容 | IE9 起 | 完全不支持 |
 
 真实项目通常先封一个 request：内部统一判 res.ok、统一 json()，业务里只传 URL 与配置，省去每处重复这两步。
+
+这层封装很短，把两件琐事收在一处：
+
+```javascript
+async function request(url, options = {}) {
+    const res = await fetch(url, {
+        headers: { "content-type": "application/json" },
+        ...options
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`)
+    return res.json()
+}
+```
+
+非 2xx 直接抛错，交给调用方的 `catch`；成功则返回解析后的对象。这和前面封装 `ajax`、`pajax` 是同一个思路，只是底层换成 fetch。
 
 > 💡 要上传进度条就用 XHR；日常请求可先封一层统一处理 res.ok 与 json()，再在业务里调用。
 

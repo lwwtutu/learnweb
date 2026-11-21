@@ -19,6 +19,15 @@ ES6 之前只有 `var` 能声明变量。因为它的提升与作用域规则太
 
 `var` 声明会被预解析提到当前作用域最前，赋值却留在原处。所以声明之前读取不会报错，只得到 `undefined`，容易让人误判变量已就绪。
 
+下面这段演示声明前读取的结果：
+
+```js
+console.log(a)      // => undefined，没报错但也没值
+var a = 100
+```
+
+引擎眼里它等价于先写 `var a`、再打印、最后才 `a = 100`，所以拿到的是 `undefined`。
+
 #### 只有函数能限制作用域
 
 `var` 只被函数边界限制，`if`、`for` 的花括号关不住它。因此块里声明的计数器，循环结束后在外层依然可见、依然可读。
@@ -91,6 +100,18 @@ console.log(arr)             // => [1, 2, 3]
 `let`、`const` 都有 TDZ。提前触碰直接抛 `ReferenceError`，而 `var` 因为声明被提升，只会给出一个 `undefined`。
 
 这样设计的意义是让"用了才发现没声明"在第一行就炸出来。因为返回 `undefined` 会让错误继续往下算，最后得到一个莫名其妙的结果，排查成本反而更高。
+
+对比一下 `var` 与 `let` 在声明前的表现：
+
+```js
+console.log(a)      // var 版 => undefined
+var a = 100
+
+console.log(b)      // let 版 => ReferenceError
+let b = 100
+```
+
+同样写在声明前，一个给出空值，一个直接抛错，这正是 TDZ 的意义。
 
 > ⚠️ 报错类型和变量提升不同：`var` 提前访问是 `undefined`，`let` / `const` 是 `ReferenceError`，别把两者记混。
 
@@ -236,6 +257,19 @@ console.log(obj.getName2())     // => false（this 不是 obj）
 
 普通函数体内有 `arguments` 伪数组，装着所有实参。箭头函数没有自己的执行环境，因此取不到它，访问会直接报错。
 
+下面这段把两种函数放在一起对比：
+
+```js
+const obj = {
+  fn: function () { return arguments },   // 伪数组
+  fun: () => arguments                     // ReferenceError
+}
+console.log(obj.fn(1, 2, 3))   // => Arguments(3) [1, 2, 3]
+// obj.fun(1, 2, 3)            // 报错：箭头函数没有 arguments
+```
+
+`arguments` 只在普通函数里存在；箭头函数要收集实参，得换成下一章要讲的 `...args`。
+
 替代方案是剩余参数 `...args`，它收到的是真数组，能直接用 `map`、`filter`，在箭头函数里也照样可用。
 
 > ⚠️ `arguments` 是伪数组，想用数组方法得先 `Array.from()`；`...args` 没有这一步，这也是它更常被选用的原因。
@@ -247,6 +281,17 @@ console.log(obj.getName2())     // => false（this 不是 obj）
 ES6 允许直接在形参上写默认值，调用时没传或传 `undefined` 才生效。这样函数体里就不需要再写 `a = a || 10` 之类的兜底。
 
 注意两者并不等价。`a || 10` 把所有假值都替换掉，`0`、`""`、`false` 都会被误改成 10，而默认参数只认 `undefined`。
+
+用代码传几个假值就能看清差别：
+
+```js
+function old(a) { a = a || 10; return a }
+function modern(a = 10) { return a }
+console.log(old(0), modern(0))      // => 10 0
+console.log(old(""), modern(""))    // => 10 ""
+```
+
+`0` 和空串本是有意义的值，却被 `||` 误伤；默认参数只在参数为 `undefined` 时才兜底，所以更可靠。
 
 | 传入值 | `a = a \|\| 10` | `a = 10` |
 |---|---|---|
@@ -291,6 +336,14 @@ console.log(rest)             // => [2, 3, 4]
 ### 对象解构：按属性名对应取值
 
 对象解构用 `{}`，靠属性名匹配而不是位置。因为对象本来就靠键名取值，所以顺序换了也照样生效。
+
+```js
+var obj = { name: "kerwin", age: 100, location: "dalian" }
+let { name, age, location } = obj
+console.log(name, age, location)   // => kerwin 100 dalian
+```
+
+左边写谁就取谁的属性，书写顺序换一换也照样取到，因为匹配靠的是键名而不是位置。
 
 | 对比 | 数组解构 `[]` | 对象解构 `{}` |
 |---|---|---|
@@ -344,6 +397,15 @@ console.log(name, myage, province, city, m)  // => kerwin 100 liaoning dalian 11
 ### 交换变量与函数参数解构
 
 交换两个变量不必再借中间变量，右边先算出数组、左边再按位置赋回即可。
+
+```js
+var a = 10
+var b = 20
+;[b, a] = [a, b]        // 行首的分号不能省
+console.log(a, b)       // => 20 10
+```
+
+右侧先按旧值组成 `[10, 20]`，左侧再按位置赋回，于是 `b` 拿到旧 `a`、`a` 拿到旧 `b`。
 
 1. 右侧 `[a, b]` 先求值，此时用的还是旧值。
 2. 左侧 `[b, a]` 再按位置接收，于是 `b` 得旧 `a`、`a` 得旧 `b`。
@@ -413,6 +475,18 @@ console.log(obj)              // => { userName: "kerwin" }
 
 注意不加 `[]` 写成 `{ key: value }`，属性名就是字面量 `"key"`，与变量里的值毫无关系。
 
+下面这段就是"只改一个字段"的通用写法：
+
+```js
+function setField(obj, field, val) {
+  return { ...obj, [field]: val }
+}
+console.log(setField({ name: "kerwin" }, "age", 100))
+// => { name: "kerwin", age: 100 }
+```
+
+`[field]` 先求值成键名，展开负责保留其余字段，两者合起来就能定点覆盖。
+
 它常与展开运算符合用，写成 `{ ...obj, [field]: val }` 来只覆盖某一个字段，第 95 章会看到完整案例。
 
 ### 两种简写合用：表单收集
@@ -426,6 +500,21 @@ console.log(obj)              // => { userName: "kerwin" }
 因为方法里能用 `this` 访问同对象的属性，简写后的对象依然自带行为，不必另外挂函数。
 
 相比过去逐个 `setAttribute` 或先拼字符串再解析，这种写法把"收集"和"成型"合成一步，代码短且字段一目了然。
+
+```js
+function collectForm() {
+  let username = "kerwin"
+  let age = 100
+  return {
+    username,
+    age,
+    getInfo() { return `${this.username} / ${this.age}` }
+  }
+}
+console.log(collectForm().getInfo())   // => kerwin / 100
+```
+
+属性简写负责成型，`getInfo()` 方法简写让对象自带行为，`this` 仍能读到同对象的字段。
 
 ### 与解构互为反向操作
 
@@ -481,6 +570,15 @@ console.log(obj)
 
 这就是"不可变更新"的套路：不改动原对象，而是先整体拷过来再覆盖。因为新旧数据各自独立，回滚与对比都更容易。
 
+```js
+var obj = { name: "kerwin", age: 100, id: "001" }
+var updated = { ...obj, name: "tiechui" }
+console.log(updated)   // => { name: "tiechui", age: 100, id: "001" }
+console.log(obj.name)  // => kerwin，原对象没被碰
+```
+
+`...obj` 先把所有字段铺进新对象，`name: "tiechui"` 放在最后完成覆盖，旧数据因此保持干净。
+
 注意对象展开进的是对象字面量，把数组展开进 `{}` 会得到以索引为键的对象，并不是数组。
 
 ### 剩余参数：把散值收成数组
@@ -521,6 +619,15 @@ console.log(sum(1, 2, 3))  // => 6
 `[...a]` 与 `{ ...a }` 都能生成一份新容器，改第一层不会影响原数据，因此常用来代替 `slice()` 复制。
 
 但展开是浅拷贝。因为只复制了最外层，里面装的对象或数组仍是同一个引用，改内层照样联动。
+
+```js
+var arr = [{ name: "a" }]
+var copy = [...arr]
+copy[0].name = "b"
+console.log(arr[0].name)   // => b，内层对象被改了
+```
+
+外层数组确实是新的一份，但里面那个对象没被复制，所以改 `copy[0]` 会连带改到 `arr[0]`。
 
 > ⚠️ `var b = { ...a }` 后执行 `b.list.push(3)`，原对象的 `a.list` 也会变，嵌套越深越容易踩这个坑。
 
@@ -587,6 +694,14 @@ import request2, { version } from './util.js'       // 默认与命名一起接
 
 `import` 会被引擎提升到模块最前，且只能写在顶层，不能放进 `if` 或函数里。需要按需加载要改用动态 `import()`，它返回 Promise。
 
+```js
+// 需在模块环境（type="module"）中运行
+const { A1 } = await import('./A.js')
+console.log(A1)
+```
+
+静态 `import` 写在顶层、加载时即确定；动态 `import()` 可以在运行时才决定加载谁，并返回 Promise 供 `await` 使用。
+
 导入的是只读视图，不能给导入的名字重新赋值；浏览器环境里路径还要写全 `.js` 后缀，打包工具才会自动补。
 
 ### type="module" 与运行条件
@@ -621,6 +736,20 @@ import request2, { version } from './util.js'       // 默认与命名一起接
 | 适合 | 工具库、多个接口 | 只对外给一个类或组件 |
 
 因为默认导出的名字由导入方决定，所以同一个模块在不同文件里可以叫不同名字；命名导出则强制一致，改动会立刻报错，更易维护。
+
+两种导出还能在同一个模块里混用：
+
+```js
+// util.js，需在模块环境（type="module"）中运行
+export default function request() {}
+export const baseURL = "/api"
+
+// main.js
+import request, { baseURL } from './util.js'
+console.log(baseURL)
+```
+
+`request` 接默认导出、名字随意，`baseURL` 接命名导出、名字必须对齐，一行 import 就能同时拿到两类成员。
 
 工程上的经验是：一个模块只给一样东西就用默认导出，给一组工具就用命名导出。
 

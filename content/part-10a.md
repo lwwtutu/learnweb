@@ -26,6 +26,17 @@ points: 表单提交会整页刷新，页面由后端拼好返回 || 前后端�
 
 ajax 把这条线切开：后端只给数据接口，前端拿到数据自己决定怎么画。这就是前后端分离，两边能各自独立演进。
 
+表单的一切都写在标签属性里，提交即把输入交给 action 指向的地址：
+
+```html
+<form action="http://www.example.com">
+  <input type="text" name="username">
+  <input type="submit" value="登录">
+</form>
+```
+
+浏览器会拼出 `?username=...` 并整页跳转，当前页被卸载，白屏和上下文丢失都由此而来。
+
 ### 请求与响应的结构
 
 一次交互就是客户端发一段请求文本、服务端回一段响应文本。
@@ -124,6 +135,19 @@ xhr.send()                                // ③ 真正发送
 | 4 | DONE | 全部完成 |
 
 `onload` 只在完成时触发一次，不用判状态，现代代码更常用它。注意「完成」不等于「成功」，还得看 `status`。
+
+把同一对象的 `readyState` 打出来，能看清它随请求推进一路变化：
+
+```js
+var xhr = new XMLHttpRequest()
+console.log(xhr.readyState)      // 0
+xhr.open("GET", "1.json")
+console.log(xhr.readyState)      // 1
+xhr.send()
+// 之后随着网络进度：2 → 3 → 4
+```
+
+只有走到 4 才叫请求结束，但结束不代表成功，仍要看状态码。
 
 ### status 状态码判断成败
 
@@ -248,6 +272,24 @@ points: 第三参数 true 异步、false 同步，默认 true || 同步请求占
 两者拿数据的位置不同，但都不改变「请求有延迟」这个事实，只是等待方式不一样。
 
 异步并非让请求变快，而是让等待期间主线程不空耗。所以界面照常响应，结果到了再补处理，这是浏览器处理网络任务的通用思路。
+
+同一段请求只改第三参数，打印顺序会反过来：
+
+```javascript
+var xhr = new XMLHttpRequest()
+xhr.open("GET", "1.json", true)      // true 表示异步请求
+//false 表示同步请求
+xhr.onload = function () {
+    if (xhr.status === 200) {
+        console.log(xhr.responseText)
+    }
+}
+xhr.send()
+
+console.log("11111111111111111111")
+```
+
+异步时先打印 `1111…` 再打印数据；改成 `false` 后顺序颠倒，因为主线程卡在 `send()` 等结果。
 
 ### 第三个参数 false 的后果
 
@@ -377,6 +419,15 @@ xhr.send()                       // 空调用，GET 无请求体
 
 这也是为什么敏感信息不放在 GET 参数里：地址会被浏览器历史、服务器日志记录下来，而请求体不会。
 
+查询串里除了自己拼的字段，数据服务还常用下划线开头的保留参数：
+
+```text
+GET /users?username=gangdaner
+GET /goods?_page=3&_limit=5
+```
+
+第一行按条件过滤，第二行取第 3 页、每页 5 条，`_page` 从 1 开始。参数名由接口约定，前端只负责拼对。
+
 ===CH===
 no: 111
 title: 请求方式-2
@@ -418,6 +469,17 @@ POST 要提交数据，必须用 `setRequestHeader` 告诉后端「请求体是�
 头与体必须匹配。直接 `send(对象)` 会被转成 `[object Object]`，必须先 `stringify`，这是本章最常见的错。
 
 `setRequestHeader` 一次只能设一个键值对，多个头要连写多行。它必须在 `open` 之后调用，位置错了浏览器会抛状态错误。
+
+以 JSON 格式提交时，顺序固定为「配置 → 声明格式 → 发送字符串」：
+
+```javascript
+var xhr = new XMLHttpRequest()
+xhr.open("POST", "http://localhost:3000/users")
+xhr.setRequestHeader("Content-Type", "application/json")
+xhr.send(JSON.stringify({ username: "ximen", password: "789" }))
+```
+
+后端按声明的 `application/json` 解析请求体，就能取出两个字段；省略请求头或直接 `send(对象)`，解析都会失败。
 
 ### 成功判断用 2xx 区间
 
@@ -510,6 +572,18 @@ function ajax(options = {}) {
 
 `queryStringify` 逐键拼接再去掉末尾多出的 `&`；GET 额外把结果接到 URL 上，`data` 为空时不加 `?`。
 
+它本身很短，核心就是遍历键、拼上 `&`、最后削掉多余尾巴：
+
+```js
+function queryStringify(obj) {
+  let str = ''
+  for (let k in obj) str += `${k}=${obj[k]}&`
+  return str.slice(0, -1)
+}
+```
+
+`queryStringify({ username: "kerwin", password: "789" })` 得到 `username=kerwin&password=789`。注意简化版没做编码，值里有 `&` 或中文时会出错。
+
 ### 解析响应并分流回调
 
 `onload` 里统一判状态、解析文本，再决定调 `success` 还是 `error`。
@@ -579,6 +653,19 @@ headers: { "content-type": "application/x-www-form-urlencoded" }
 结果最坑的是「看起来成功」，数据库里却多了一条只有 id 的空记录，问题相当隐蔽。
 
 排查这类问题要看网络面板里的请求头，而不是只看状态码。头缺失时状态码照样是 201，从状态上完全看不出数据其实没写进去。
+
+出问题的调用往往就是看着正常的这一版，`headers` 整个省略：
+
+```js
+ajax({
+    url: "http://localhost:3000/users",
+    method: "POST",
+    data: { username: "xiaoming", password: "456" }
+    // 没有 headers
+})
+```
+
+默认 `headers` 为空对象，`content-type` 取不到，可选链判断为假，数据被拼成表单串却没带对应请求头，后端还原不出字段。
 
 ### 五种方法都能用同一封装跑
 
@@ -757,3 +844,18 @@ getNews()
 链式的另一层价值是错误能冒泡：任意一步失败都会跳到末尾的 `.catch`，不必每层各写一份，正好补上回调写法的短板。
 
 `async/await` 会进一步把这条链写成看似同步的顺序语句，这是后面章节的主线。
+
+还要分清串行依赖和互不依赖：后一种若硬套回调，只会白白慢一倍。
+
+```js
+// 错误：没有依赖却嵌套，白白慢一倍
+ajax({ url: "/list1", success: a => {
+    ajax({ url: "/list2", success: b => { render(a, b) } })
+}})
+
+// 正确：并发，快一倍
+Promise.all([pajax({url:"/list1"}), pajax({url:"/list2"})])
+    .then(([a, b]) => render(a, b))
+```
+
+两段请求没有数据往来就同时发出，用 `Promise.all` 等齐再渲染，耗时只取较慢的那个。

@@ -70,6 +70,17 @@ console.log(box.nodeType)   // => 1（元素节点只是节点的一种）
 - 手写 HTML 带缩进空白，`createElement` 造的结构只有亲手加进去的节点，两者数量对不上。
 - 因为空白捣乱，取首尾子节点不能用 `firstChild`，得改用只认标签的那一套。
 
+同样的两个 `p`，紧贴着写和分行缩进写，节点数完全不同：
+
+```js
+var tight = document.querySelector("#tight")   // <div><p>1</p><p>2</p></div>
+var loose = document.querySelector("#loose")   // <div> 内两个 p 分行缩进
+console.log(tight.childNodes.length)   // => 2（标签紧贴，无空白）
+console.log(loose.childNodes.length)   // => 5（多出 3 个空白文本节点）
+```
+
+空白也占节点位，所以数子元素一律用只认标签的 `children`，不用 `childNodes`。
+
 ### 节点之间的树形关系
 
 节点按嵌套连成树：被包在内部的是子节点，同一父级下并列的是兄弟节点，向外一层是父节点。
@@ -152,6 +163,17 @@ console.log(box.getAttribute("index"))              // => "1"（更常用）
 - 点谁、改旁边：用 `nextElementSibling` / `previousElementSibling`
 - 往上找 `li` 的父级 `ul`：用 `parentNode`
 - 读某个属性值：用 `getAttribute`
+
+取首尾时差别最直观：`firstChild` 常被换行空白占位，带 `Element` 的版本才拿到标签：
+
+```js
+var box = document.querySelector("#box")
+console.log(box.firstChild)          // => #text（换行产生的文本节点）
+console.log(box.firstElementChild)   // => <p>111111</p>
+console.log(box.lastElementChild)    // => <p>22222</p>
+```
+
+带 `Element` 的一套会跳过文本与注释，点谁改旁边、取首尾都靠它。
 ===CH===
 no: 60
 title: 节点操作（增删改）
@@ -201,6 +223,18 @@ box.insertBefore(odiv, child)  // => 改放 child 之前（移动，仍是同一
 `replaceChild(新, 旧)` 用新节点换掉旧节点，参数顺序是「新的在前、旧的在后」，写反就换错了对象。
 
 因此它适合整块内容改版，而只是改文字时用 `innerHTML` 更省事。
+
+整块换掉一个节点时，先造好新节点再调用 `replaceChild`：
+
+```js
+var box = document.querySelector("#box")
+var child = document.querySelector("#child")
+var odiv2 = document.createElement("div")
+odiv2.innerHTML = "2222222"
+box.replaceChild(odiv2, child)   // 新的在前，旧的在后
+```
+
+参数顺序写反就会换错对象，所以调用前先确认哪个是新的、哪个是被换掉的。
 
 > ⚠️ 被替换掉的旧节点并没有立刻销毁，只是脱离了文档；若还留着引用，仍可再插回别处。
 
@@ -285,6 +319,18 @@ points: 1 元素、2 属性、3 文本、8 注释，编号固定 || 元素节点
 | `nodeType` | 节点类型编号 | `number` | 遍历时过滤 |
 | `nodeName` | 节点名字（大写） | `string` | 判断是什么标签 |
 | `nodeValue` | 文本、注释或属性值 | `string` / `null` | 读取节点内容 |
+
+遍历 `childNodes` 逐个打印 `nodeValue`，三类节点会给出三种结果：
+
+```js
+var obox = document.querySelector(".box")   // <div class="box">hello world<!-- kerwin --><div>11111</div></div>
+for (var i = 0; i < obox.childNodes.length; i++) {
+    console.log(obox.childNodes[i].nodeValue)
+}
+// => "hello world"（文本）/ " kerwin "（注释）/ null（元素）
+```
+
+文本和注释的值就是各自的内容，元素节点没有 `nodeValue` 所以是 `null`；想跳过它们只处理标签，就判断 `nodeType === 1`。
 
 > ⚠️ 常见记反：`nodeType === 3` 是文本节点、8 才是注释节点；`nodeName` 一律大写，比较时写 `"li"` 永远不成立。
 
@@ -409,6 +455,16 @@ console.log(box.offsetWidth)                 // => 100（仍占位，能取到�
 `margin` 是元素与外部的距离，不属于元素自身尺寸，因此不计入任何 `offset` / `client` 组。
 
 要算两个元素之间的真实距离，得手动把 `margin` 加上，或改用 `getBoundingClientRect()`，它返回的盒模型会反映外部间距。
+
+验证一下 `margin` 确实不在这些尺寸里：
+
+```js
+var box = document.querySelector("#box")   // 假设 margin: 100px，box-sizing: border-box
+console.log(box.offsetWidth)   // => 100（含 padding 与 border，不含 margin）
+console.log(box.clientWidth)   // => 90（扣掉 border，同样不含 margin）
+```
+
+两组值都没把外面的 `margin` 算进来，所以量间距时不能指望它们，得另想办法。
 ===CH===
 no: 64
 title: 获取元素偏移量
@@ -463,6 +519,16 @@ box.style.left = "80px"          // => 用 style 改位置，要带单位
 
 因此看到它们别当成距离，只有当元素有边框、需要扣掉边框厚度时才用得上。
 
+边框设厚一点，读出来的就是边框宽度，和坐标无关：
+
+```js
+var list = document.querySelector("#list")   // 假设左边框、上边框各 50px
+console.log(list.clientLeft, list.clientTop)   // => 50 50（左、上边框厚度）
+console.log(list.offsetLeft)                    // => 到定位父级的距离，与边框厚度是两回事
+```
+
+`offsetLeft` 量的是位置，`clientLeft` 量的是边框本身，名字相近但用途完全不同。
+
 ### 三种距离别混
 
 `offsetLeft` 相对定位父级，是数字，跨层级要自己累加；`getBoundingClientRect()` 相对视口，一次拿到 `left`、`top`、`width`、`height`，滚动后值会变。
@@ -492,6 +558,16 @@ points: window.innerWidth 含滚动条，documentElement.clientWidth 不含 || �
 | `window.innerWidth` / `innerHeight` | 含 | 一般情况 |
 | `document.documentElement.clientWidth` | 不含 | 精确知道内容区多大 |
 | `document.documentElement.clientHeight` | 不含 | 判断滚动到底、算懒加载 |
+
+把两套值同一时刻读出来，差别一眼可见：
+
+```js
+console.log(innerWidth)                            // => 含滚动条的视口宽
+console.log(document.documentElement.clientWidth)  // => 不含滚动条的干净内容区宽
+console.log(innerHeight, document.documentElement.clientHeight)  // => 高同理，也差一个滚动条
+```
+
+有滚动条时 `inner` 比 `client` 大，没滚动条时两者相等；这条差值正好就是滚动条宽度。
 
 ### 兼容写法与差值
 
@@ -639,6 +715,22 @@ box2.addEventListener("click", function () { console.log("1") })
 box2.addEventListener("click", function () { console.log("2") })
 // => 点击依次输出 1、2（按注册顺序）
 ```
+
+要兼容老 IE 时，可以把两种绑定封装成一个函数，jQuery 的 `on()` 早年就是这么做的：
+
+```js
+function bind(el, type, fn) {
+    if (el.addEventListener) {
+        el.addEventListener(type, fn, false)
+    } else {
+        el.attachEvent("on" + type, fn)
+    }
+}
+var box2 = document.querySelector("#box2")
+bind(box2, "click", function () { console.log("点击") })
+```
+
+标准浏览器走 `addEventListener`，只有老 IE 才落到 `attachEvent`；现代项目直接用前者即可。
 
 ### this 与手动触发
 

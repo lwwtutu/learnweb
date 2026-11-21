@@ -208,6 +208,16 @@ $.ajax({
 - Promise 风格：`$.ajax(...).then(res => ...).catch(err => ...)`
 - 同步风格：`var res = await $.ajax(...)`，需放在 async 函数里
 
+Promise 风格写成代码，链式取值很直观：
+
+```js
+$.ajax({ url: "/users", data: { username: "kerwin" } })
+    .then(res => console.log(res))
+    .catch(err => console.log(err))
+```
+
+结果：成功进入 then 拿到数据，失败进 catch。因为 jqXHR 是 Promise 超集，这两个方法都能直接用。
+
 > 💡 `jqXHR` 还多出 `.done/.fail/.always/.abort`，比原生 Promise 更方便。
 
 ### $.get 与 $.post 的关系
@@ -351,6 +361,18 @@ jQuery 会生成随机函数名挂到全局、插入 script、执行完再把标
 - 调用示例：`$.ajax({ url: "...", dataType: "jsonp", jsonp: "cb" })`
 - 后面照常接 `.then(res => ...)`，用法与普通 ajax 一致
 
+把开关和参数名配上，一段完整的调用是这样：
+
+```js
+$.ajax({
+    url: "https://example.com/api/search",
+    dataType: "jsonp",
+    jsonp: "cb"          // 后端约定的回调参数名
+}).then(res => console.log(res))
+```
+
+结果：jQuery 自动插 script、生成全局回调，数据最终流进 then。因为 dataType 切到 jsonp 模式后，其余用法和普通 ajax 一致。
+
 > 💡 百度一类接口用 `cb`，参数名以对方文档为准，从 Network 面板看请求 URL 即可确认。
 
 ### jsonpCallback 写死函数名
@@ -450,6 +472,17 @@ $(document).ajaxStop(() => $("#loading").hide())
 - 绑定对象用 `$(document)` 最标准，`$(window)` 等价
 - 用 `ajaxError` 统一处理 401 跳登录、500 提示，省去每处写 `error`
 - `$.ajaxSetup` 可给所有请求加统一头，但会污染全局，多人协作慎用
+
+全局错误处理是最常用的一个钩子，绑一次就管住整站：
+
+```js
+$(document).ajaxError(function (e, xhr, settings) {
+    console.log(settings.url, xhr.status)   // 地址与状态码
+    if (xhr.status === 401) location.href = "/login"
+})
+```
+
+结果：任一请求失败都会打印失败地址，401 时统一跳登录。因为钩子从事件对象里拿到 xhr 与配置，能按状态码集中分流。
 
 > ⚠️ 全局钩子管不到 jsonp，它走 script 标签，不经过 ajax 全局事件。
 ===CH===
@@ -585,6 +618,14 @@ function deepCopy(target, origin) {
 
 `typeof` 分不清数组、null 与对象，用 `Object.prototype.toString.call` 最稳。
 
+```js
+console.log(Object.prototype.toString.call({}))    // => "[object Object]"
+console.log(Object.prototype.toString.call([]))    // => "[object Array]"
+console.log(Object.prototype.toString.call(null))  // => "[object Null]"
+```
+
+结果：三种值得到不同标签，`typeof` 却会把前两者都报成 `object`。因为标签来自对象内部的 class 信息，能精确区分。
+
 #### 先建空壳再递归
 
 必须先给 `target[k]` 一个 `{}` 或 `[]`，再把子层填进去；直接赋原值就退化成浅复制。
@@ -594,6 +635,17 @@ function deepCopy(target, origin) {
 递归调用要传 `target[k]`，把数据填进子容器；传错成外层对象会全堆到第一层。
 
 > 💡 递归天然处理任意深度，但遇到循环引用会栈溢出，需要额外记录已拷贝对象。
+
+判完类型后，递归的收尾步骤就是「建空壳 + 填子层 + 归还」：
+
+```js
+deepCopy(myobj2, myobj1)   // 把 myobj1 深拷贝进 myobj2
+console.log(myobj2.location.city)          // => "dalian"
+myobj2.location.a.b.c = 999
+console.log(myobj1.location.a.b.c)         // => 1，深层也互不影响
+```
+
+结果：改副本的第三层，原对象仍是旧值。因为每层对象都新建了容器，没有任何一层共享引用。
 
 ### JSON 转换法与它的缺陷
 
@@ -652,6 +704,15 @@ $.extend(true, {}, src)        // 深复制，loc 是独立新对象
 - 规范写法：`$.extend(true, {}, defaults, options)`
 - 失误写法：`$.extend(true, defaults, options)` 会把 `defaults` 改掉
 - 结果里同名键以最后出现的源为准
+
+多源覆盖的结果可以直接看出来：
+
+```js
+var obj = $.extend({}, { name: "kerwin", age: 18 }, { age: 20 })
+console.log(obj)   // => {name: "kerwin", age: 20}
+```
+
+结果：同名 age 被后一个源覆盖成 20。因为合并按参数顺序执行，后写的源总是覆盖先写的。
 
 > 💡 用 `{}` 当靶子，是为了让默认配置在多次调用之间保持干净。
 
@@ -740,6 +801,16 @@ jq("div").html(1)         // 用返回值也行
 - 只和 `$` 冲突：`var jq = $.noConflict()`，之后用 `jQuery` 或 `jq`
 - 两个名字都冲突：`var jq = $.noConflict(true)`，只能用 `jq`
 
+交还后验证一下返回值，就知道手里还剩什么：
+
+```js
+var jq = $.noConflict()
+console.log(jq === jQuery)   // => true，返回值就是 jQuery 函数
+console.log($)               // => 旧库那个 $，已经交还回去
+```
+
+结果：jq 与 jQuery 全名指向同一个函数，`$` 则变回旧库的值。因为 noConflict 返回值就是 jQuery 本体。
+
 > 💡 noConflict 必须在 jQuery 引入之后、第一次使用之前调用，早了晚了都不对。
 
 ### 更推荐 IIFE 传局部 $
@@ -824,6 +895,20 @@ $("input[type=checkbox]").allChecked(true).css({ width: 100 })
 
 - 静态方法里能写 `this.deepCopy(...)` 递归调用自己
 - 实例方法里 `this.prop(...)` 会隐式迭代整组元素
+
+静态方法里靠 this 递归调用自己的写法：
+
+```js
+$.extend({
+    deepCopy(o2, o1) {
+        // ...判类型、建空壳后递归
+        this.deepCopy(o2[i], o1[i])   // this 就是 $
+    }
+})
+$.deepCopy({}, src)                   // => 从 $ 上直接调
+```
+
+结果：方法内部能用 `this` 调回自己。因为静态方法由 `$` 调用，函数里的 `this` 指向 `$` 本身。
 
 > 💡 实例方法里的 `this` 已是 jQuery 对象，不要再包一层 `$(this)`。
 

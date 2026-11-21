@@ -89,6 +89,16 @@ console.log(typeof test)  // => "function"
 ```
 
 要分清两种「空」：`is not defined` 是从未声明过该变量，`undefined` 是声明了却没赋值。函数属于复杂数据类型，但 `typeof` 对它返回独有的 `"function"`，而不是数组、对象那样的 `"object"`。
+
+把两种「空」放进同一段里比较，差别最直观：
+
+```js
+console.log(abc)   // => ReferenceError: abc is not defined
+var x
+console.log(x)     // => undefined（声明了，没赋值）
+```
+
+前者压根没声明过，后者声明了却没赋值——判断变量时别把两者混为一谈。
 ===CH===
 no: 21
 title: 函数实战：九九乘法表
@@ -175,6 +185,19 @@ JS 不强制实参与形参个数相等，多传、少传都不报错。这一�
 - 实参少传：缺位的形参值为 `undefined`，`undefined === 1` 为 `false`，会走进非预期分支
 - 形参与外部变量重名：是两个不同变量，基本类型按值传递，函数内改形参不影响外部
 
+形参即使和外部变量同名，改它也不会影响外面——用一段代码验证：
+
+```js
+function test(a) {
+    a = 999
+}
+var num = 1
+test(num)
+console.log(num)   // => 1（基本类型按值传递，形参改动不外传）
+```
+
+这正是「基本类型传值」的直观体现，引用类型的表现会在第 27 章补充。
+
 ### arguments：多传的实参去哪了
 
 多传的实参并非真正被丢弃，只是没有形参接住它。JS 在每个函数内提供一个类数组对象 `arguments`，按顺序存下所有实参。
@@ -238,6 +261,18 @@ console.log(res * 10)     // => 60（结果能继续参与运算）
 - `return`：把值交给代码用，外部能接收，函数立刻结束
 
 > 🧠 只是查看中间值用 `console.log`，结果还要被别处使用就必须 `return`。
+
+把两种写法放一起对比，差异一眼可见：
+
+```js
+function f1(a, b) { console.log(a + b) }
+function f2(a, b) { return a + b }
+var r1 = f1(1, 2)   // 控制台打印 3
+var r2 = f2(1, 2)   // 控制台无输出
+console.log(r1, r2) // => undefined 3（只有 return 的结果能被接住）
+```
+
+调试看值用 `console.log`，结果还要参与运算就必须用 `return`。
 
 ### 没有 return 时返回 undefined
 
@@ -329,6 +364,17 @@ console.log(myname)        // => "kerwin"
 
 - `ReferenceError: x is not defined`：压根没声明过该变量
 - `TypeError: x is not a function`：变量存在，但不是函数
+
+声明式函数整体被提升，所以调用写在定义前也能跑：
+
+```js
+test()   // => "test"（调用写在定义之前也能成功）
+function test() {
+    console.log("test")
+}
+```
+
+赋值式换成 `var test = function () {}` 就会得到 TypeError，因为提升的只是变量名。
 
 ### 重名覆盖规则
 
@@ -437,6 +483,19 @@ console.log(num)            // => 400
 - 无 `var`：沿作用域链往外找并修改，一路到全局仍没有，才自动创建隐式全局变量
 
 隐式全局很危险：一旦变量名打错，不会报错而是悄悄多出一个全局变量，排查困难。开启严格模式 `"use strict"` 后它会直接报错，所以变量一律先声明。
+
+拼错变量名不会报错，而是悄悄多出一个全局变量：
+
+```js
+function count() {
+    totle = 1   // 本想写 total，拼错了
+}
+count()
+console.log(totle)   // => 1（隐式创建的全局）
+console.log(total)   // => undefined（原本想用的变量并不存在）
+```
+
+看到结果里多出一个没声明过的变量，就要回头查有没有漏写 `var`。
 
 ### 块级作用域缺席带来的问题
 

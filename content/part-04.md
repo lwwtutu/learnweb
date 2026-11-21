@@ -136,6 +136,17 @@ console.log(typeof person)                  // => "object"
 console.log(typeof [])                      // => "object"
 console.log(Array.isArray(person.hobbies))  // => true
 ```
+
+`instanceof` 也能判断具体类型，对 `Date` 同样有效：
+
+```js
+var d = new Date()
+console.log([] instanceof Array)   // => true
+console.log(d instanceof Date)     // => true
+console.log(d instanceof Array)    // => false
+```
+
+`typeof` 分不清这些引用类型，改用 `instanceof` 才能区分具体是哪一种。
 ===CH===
 no: 27
 title: 对象的遍历与存储
@@ -181,6 +192,19 @@ for (var k in obj) { sum += obj[k] }
 console.log(sum)                     // => 6
 console.log(Object.keys(obj).length) // => 3
 ```
+
+遍历还能按条件筛出一部分属性，组成新对象：
+
+```js
+var scores = { a: 1, b: 2, c: 3 }
+var passed = {}
+for (var k in scores) {
+    if (scores[k] > 1) passed[k] = scores[k]
+}
+console.log(passed)   // => { b: 2, c: 3 }
+```
+
+这样就能从一个对象里筛出符合条件的属性，得到一份新的对象。
 
 ### 基本类型与引用类型的存储差异
 
@@ -335,6 +359,17 @@ console.log(arr)                  // => [1, 2, 3]
 
 这类中间有空位的数组叫稀疏数组，遍历时容易踩坑，实际开发应始终按顺序追加，不要跳着赋值。
 
+越界访问和跳号赋值的结果，用代码看更清楚：
+
+```js
+var arr = ["a", "b", "c"]
+console.log(arr[3])   // => undefined（越界不报错）
+arr[5] = "f"
+console.log(arr.length)   // => 6（索引 3、4 是空位）
+```
+
+访问越界只会得到 `undefined`，而跳号赋值会让 `length` 变大、中间留下空位。
+
 ### 遍历数组
 
 遍历用 `for` 配 `arr.length`，条件写 `<` 才不会多跑一次、多打一个 `undefined`。
@@ -414,6 +449,20 @@ console.log(arr)   // => [1, 2, 3, 11, 33, 44]
 选择排序每轮在剩余元素里找出最小值的索引，再和本轮开头交换。
 
 记索引而不是记值，是因为只知道最小值、不知道它在哪，就没法完成交换。
+
+记值为什么不够用，对比一下就明白：
+
+```js
+var arr = [3, 1, 2]
+var min = arr[0]     // 只记值：知道最小是 1，却不知道位置
+var minIndex = 0     // 记索引：值可用 arr[minIndex] 取回
+for (var i = 1; i < arr.length; i++) {
+    if (arr[i] < arr[minIndex]) minIndex = i
+}
+console.log(minIndex)   // => 1
+```
+
+只有拿到索引，才能和本轮开头交换位置；这正是选择排序记索引的原因。
 
 ```js
 var arr = [44, 3, 2, 1, 5, 8, 111]
@@ -578,6 +627,19 @@ console.log(arr.indexOf("a") !== -1) // => true
 `every` 一假即假，`some` 一真即真，`find` 返回元素本身而不是数组。
 
 > 💡 数组去重可写 `Array.from(new Set(arr))`；老思路是准备空数组逐项检查「有没有见过」，没见过才 `push`。
+
+老思路用 `indexOf` 判断「有没有见过」，写起来也不长：
+
+```js
+var arr = [1, 2, 3, 4, 3, 5, 6, 2, 1]
+var result = []
+for (var i = 0; i < arr.length; i++) {
+    if (result.indexOf(arr[i]) === -1) result.push(arr[i])
+}
+console.log(result)   // => [1, 2, 3, 4, 5, 6]
+```
+
+`indexOf` 找不到返回 `-1`，所以结果为 `-1` 就表示这个值是第一次出现。
 
 ### 高阶方法：forEach / map / filter / reduce
 
@@ -843,6 +905,15 @@ console.log(back.name)    // => "kerwin"
 | `NaN`、`Infinity` | 变成 `null` |
 | 循环引用 | 直接报错 |
 
+丢属性这件事用代码验证最直观：
+
+```js
+var obj = { a: 1, b: undefined, c: function () {} }
+console.log(JSON.stringify(obj))   // => '{"a":1}'（b、c 被丢掉）
+```
+
+对象里带函数或 `undefined` 时，序列化会失真，前面讲的深拷贝也会受影响。
+
 ### 与 JS 对象的差别及解析坑
 
 JS 对象键可不加引号、可用单引号、能放函数，JSON 三条都不行，这就是两者的核心差别。
@@ -922,6 +993,16 @@ console.log(Math.PI)               // => 3.141592653589793
 | `max(...)` / `min(...)` | 最大 / 最小值 |
 
 `Math.max()` 空参数返回 `-Infinity`，求数组最大值用循环或展开写法更稳妥。
+
+求数组最大值不能直接把数组交给 `Math.max`，要先把元素展开：
+
+```js
+var nums = [10, 50, 20, 34]
+console.log(Math.max())                   // => -Infinity（没传参数）
+console.log(Math.max.apply(null, nums))   // => 50
+```
+
+`apply` 把数组拆成多个参数；ES6 的 `...nums` 是更简洁的等价写法。
 
 ### toFixed：返回字符串且会四舍五入
 
@@ -1192,6 +1273,17 @@ console.log("3")
 ### 不精确与任务堆积
 
 定时器也不精确：浏览器有最小间隔限制、页面在后台会被降频、主线程忙时回调要排队。
+
+实际延迟量可以用时间戳差测出来：
+
+```js
+var start = Date.now()
+setTimeout(function () {
+    console.log(Date.now() - start)   // => 1003 之类，很少正好 1000
+}, 1000)
+```
+
+所以精确计时要用时间戳差值，而不是数定时器跑了几轮。
 
 因此精确计时要用时间戳差值，而不是累计定时器次数。
 

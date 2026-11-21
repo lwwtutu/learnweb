@@ -52,6 +52,19 @@ DOM2 允许一个元素同时挂多个监听，浏览器内部按「事件类型
 | `el.addEventListener("click", fn)` | `el.removeEventListener("click", fn)` | 同一个 `fn`，类型不写 on |
 | `el.attachEvent("onclick", fn)` | `el.detachEvent("onclick", fn)` | 老 IE 类型要写 on |
 
+老 IE 那一对用起来也一样，只是类型要带 `on`：
+
+```js
+var btn = document.querySelector("#btn")
+function handler() {
+    console.log("谢谢惠顾")
+    btn.detachEvent("onclick", handler)   // IE 里类型要写 onclick
+}
+btn.attachEvent("onclick", handler)
+```
+
+三种解绑方式必须和绑定方式配对，混用一律无效；IE 这套现在浏览器里已不存在，认识即可。
+
 ### 匿名函数为什么解不掉
 
 绑定和解绑都写匿名函数时，看上去一模一样，实际是两次新建、互不相同的两个函数对象。它们的引用不相等，`removeEventListener` 找不到登记项，只能静默失败，事件依旧挂在元素上。
@@ -144,6 +157,19 @@ username.onkeyup = function (e) {
 | 实时性 | 实时 | 非实时 |
 | 适合 | 字数限制、模糊查询 | 下拉联动、格式校验 |
 
+把几个表单事件都绑上，各自什么时候触发一试便知：
+
+```js
+var username = document.querySelector("#username")
+var myform = document.querySelector("#myform")
+username.onfocus = function () { console.log("获得焦点") }
+username.onblur  = function () { console.log("失去焦点，适合在此校验格式") }
+username.oninput = function () { console.log("每敲一个字就触发") }
+myform.onsubmit  = function () { console.log("提交"); return false }   // 拦住默认提交
+```
+
+`input` 实时、`change` 失焦后才触发，实时搜索用前者、格式校验用后者；`submit` 绑在按钮上无效。
+
 > ⚠️ `submit` 必须绑在 `form` 上，绑到提交按钮无效；`focus / blur` 不冒泡，需要冒泡时改用 `focusin / focusout`。
 
 ### 页面类事件与移动端触摸
@@ -224,6 +250,20 @@ box.onkeydown = function (e) {
 }
 ```
 
+老代码里判断回车靠固定的数字 13，配合 `keyup` 读最终输入：
+
+```js
+var username = document.querySelector("#username")
+username.onkeyup = function (e) {
+    console.log(e.keyCode)              // => 13（回车）
+    if (e.keyCode === 13) {
+        console.log("搜索：" + this.value)   // this 是输入框，value 已是最终内容
+    }
+}
+```
+
+回车码固定是 13，而 `keyup` 时输入框的值已更新完，所以这里能读到最终输入。
+
 回车搜索是把三样东西凑齐的典型：`e` 判是否回车，`this` 拿事件源，`this.value` 拿内容，三者一起用最顺。
 ===CH===
 no: 71
@@ -268,6 +308,18 @@ box.onclick = function (e) {
 }
 // pageY === clientY + 页面纵向滚动距离
 ```
+
+把差值直接读出来，就能验证这条换算关系：
+
+```js
+var box = document.querySelector("#box")
+box.onclick = function (e) {
+    var scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+    console.log(e.pageY - e.clientY)   // => 约等于 scrollTop
+}
+```
+
+页面没滚动时差值为 0，两者相等；往下滚多少就差多少，用这个方法能快速自检坐标选没选对。
 
 ### offsetX 的坑：相对事件源而非被点元素
 
@@ -438,6 +490,20 @@ inner.addEventListener("click", function () { console.log("inner-捕获") }, tru
 | 目标 target | 抵达被点元素 | 自身监听按注册顺序 |
 | 冒泡 bubbling | 内 → 外 | 第三参 `false` 或省略（默认） |
 
+DOM0 的 `onclick` 同样在冒泡阶段触发，点最内层时外层也会响应：
+
+```js
+var inner = document.querySelector("#inner")
+var center = document.querySelector("#center")
+var outer = document.querySelector("#outer")
+inner.onclick = function () { console.log("inner") }
+center.onclick = function () { console.log("center") }
+outer.onclick = function () { console.log("outer") }
+// 点 inner => inner、center、outer（从里往外）
+```
+
+所以「只点了一个」不等于「只有一个响应」，这正是后面要做阻止传播和事件委托的前提。
+
 ### addEventListener 第三参数是阶段开关
 
 第三参数叫 `useCapture`，是切换阶段的开关：省略或传 `false` 注册到冒泡，传 `true` 注册到捕获。它决定的只是「监听在去程还是回程被触发」。
@@ -536,6 +602,18 @@ btn.addEventListener("click", function () { console.log("第二个仍执行") })
 - 能用 `e.target.nodeName === "BUTTON"` 提前 `return`：优先用替代，不误伤别人
 - 全局点击、弹窗关闭依赖冒泡：不要轻易截断
 
+能提前判断就不必截断传播，点按钮时直接退出即可：
+
+```js
+var oli = document.querySelector("li")
+oli.onclick = function (e) {
+    if (e.target.nodeName === "BUTTON") return   // 点的是按钮，不执行外层逻辑
+    console.log("跳转")                          // 点文字才走这里
+}
+```
+
+这样全局点击、弹窗关闭这些依赖冒泡的逻辑不会被误伤，比到处写 `stopPropagation` 更稳。
+
 一句话，本章管的是「事件传不传」；浏览器自带的动作做不做，是下一章 `preventDefault` 的事，两者不是一回事。
 ===CH===
 no: 76
@@ -603,6 +681,17 @@ myform.addEventListener("submit", function (e) {
 | 阻止什么 | 事件继续传播 | 浏览器的默认行为 |
 | 影响 | 外层或内层元素的监听 | 跳转、提交、右键菜单等自带动作 |
 | 例子 | 点按钮不再触发整行跳转 | 点右键不弹系统菜单 |
+
+原生 JS 里要同时拦默认行为和传播，得明确写两行：
+
+```js
+document.addEventListener("click", function (e) {
+    e.preventDefault()      // 拦浏览器自带动作
+    e.stopPropagation()     // 拦事件继续传播
+})
+```
+
+一个管浏览器做不做、一个管事件传不传，互不干扰，所以常配套出现；这两行等价于 jQuery 的一句 `return false`。
 
 把这两个方法合起来，就够搭出下一章的自定义右键菜单；再往后，冒泡与 `e.target` 还会撑起事件委托。
 ===CH===
@@ -707,6 +796,19 @@ list.onclick = function (e) {
     }
 }
 ```
+
+菜单项各带一个 `class`，父级一次监听加 `className` 判断就能分清点了哪项：
+
+```js
+var list = document.querySelector("#list")
+list.onclick = function (e) {
+    if (e.target.className === "aaa") {
+        console.log("点了第一项")   // => 点 class 为 aaa 的那一项时
+    }
+}
+```
+
+判断依据只来自被点的元素，父级不需要知道有多少子项，这就是委托能省掉大量监听的原因。
 
 省监听器、动态元素免重绑、只需解绑父级一个，三个好处都由此而来。判断菜单里点了哪一项，还可以用 `e.target.className` 或 `dataset.index` 区分，不必给每项单绑。
 

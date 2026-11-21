@@ -61,6 +61,17 @@ $.ajax({ url: "/list" })   // 点出静态方法 → 工具函数
 | DOM 对象 | 有 `style`、`className` | `$(dom)` |
 | jQuery 对象 | 有 `length`、`[0]`、`css()` | `$obj[0]` 或 `$obj.get(0)` |
 
+用三段最小代码看清它为什么「不是真数组」：
+
+```js
+var $li = $("ul li")
+$li.length              // => 7，有 length
+$li[0]                  // => 第一个 li（原生 DOM）
+$li instanceof Array    // => false，是伪数组不是真数组
+```
+
+结果：能取 `length` 和下标，却不是 `Array` 的实例。因为它是包着 DOM 的包装层，没有 `forEach` 这些方法。
+
 > ⚠️ 把 jQuery 对象当数组 `forEach`，或把 DOM 对象直接 `.css()`，是最常见的两类报错。
 
 ### 链式调用靠返回自身
@@ -142,6 +153,16 @@ $("ul li.active").index()     // 在兄弟中的位置，从 0 起
 
 > 💡 `.index()` 返回被点标题的序号，再用 `.eq(index)` 找对应内容，选项卡全靠这一对。
 
+顺着兄弟链前后查找还有 next 系列，按范围从近到远：
+
+```js
+$("ul li.active").next()             // => 紧跟的下一个兄弟
+$("ul li.active").nextAll(".a")      // => 后面所有 .a 兄弟
+$("ul li.active").nextUntil(".end")  // => 直到 .end，不含它自己
+```
+
+结果：next 取一个，nextAll 取一类，nextUntil 取一段。因为需求常是「从当前到某处」这一整段，比手动循环下标更直接。
+
 ### 与原生 querySelector 的对照
 
 原生一次拿到的是静态集合，jQuery 拿到的是可以继续筛选、可以链式的对象。
@@ -199,6 +220,16 @@ $("ul li:eq(3)").css({
 
 > ⚠️ 数字只对需要单位的属性补 `px`，`opacity`、`zIndex` 这类无单位属性不会被硬塞单位。
 
+除了传对象，还能传函数，让 jQuery 按元素下标算出样式值：
+
+```js
+$("ul li").css("width", function (index, oldVal) {
+    return index * 20 + 100
+})
+```
+
+结果：第 0 个宽 100px、第 1 个 120px，依次递增。因为写操作会隐式遍历整组，函数收到的 index 正好用来做递变。
+
 ### 隐式迭代：写遍历全部，读只取第一个
 
 对一批元素做写操作时，jQuery 自动循环整组，这个机制叫隐式迭代。
@@ -254,6 +285,15 @@ points: addClass、removeClass、toggleClass 都返回 jQuery 对象，可继续
 | `.hasClass(str)` | 判断是否含有 | 布尔值 |
 
 > 💡 `addClass("a b c")` 可一次加多个，`removeClass()` 不传参会清空全部，这两点常被忽略。
+
+把这两个用法写成代码更直观：
+
+```js
+$("#box").addClass("a b c")   // 一次加三个
+$("#box").removeClass()       // 不传参，清空全部
+```
+
+结果：前者挂上三个 class，后者把单个元素上的 class 全清掉。因为方法把参数按空格拆分处理，所以支持一次传多个。
 
 ### 返回值决定能否继续链式
 
@@ -342,6 +382,16 @@ $("ul.list").html(listr)        // 渲染列表的固定搭配
 - `map` 之后必须 `join("")`，否则数组隐式转字符串会带出逗号
 
 > ⚠️ 忘写 `join("")` 是本篇出现频率最高的坑，逗号会被当成文字插进列表。
+
+两者对用户输入的处理截然不同，这是安全上的关键差别：
+
+```js
+var input = "<img src=x onerror=alert(1)>"
+$("#box").html(input)   // 标签被解析，脚本可能执行
+$("#box").text(input)   // 原样显示成文字，安全
+```
+
+结果：同一段输入，html 会当标签执行而 text 只显示字面量。因为用户内容夹带标签时只有 text 不会触发脚本。
 
 ### val 与表单取值
 
@@ -447,6 +497,15 @@ $("#mybtn").removeAttr("disabled")    // 移除属性也能解除
 | 读写自定义属性 | `attr` | `prop` 读不到 |
 | 读实时输入值 | `.val()` | `attr("value")` 是初始值 |
 
+value 这个坑用两行就能看清：
+
+```js
+$("input").attr("value")   // => HTML 上写的初始值，不会跟输入变
+$("input").val()           // => 当前输入框里的值
+```
+
+结果：输入框内容改了以后 attr 读到的还是旧值，只有 val 反映最新输入。因为 value 的标签属性和 DOM 属性并不同步。
+
 > ⚠️ `attr("value")` 拿到的是 HTML 上写的初始值，不会跟输入变；取当前内容要用 `.val()`。
 ===CH===
 no: 139
@@ -510,6 +569,16 @@ $("p").css("left", 100)                  // 想改位置用 css 或 offset
 | `$(el).offset().left` | `el.getBoundingClientRect().left + scrollX` |
 | `$(el).position().left` | `el.offsetLeft`（相对 offsetParent） |
 
+隐藏前后测一次，差别就很清楚：
+
+```js
+$("#box").offset()      // => 有值，如 {top: 50, left: 50}
+$("#box").hide()
+$("#box").offset()      // => {top: 0, left: 0}，不可靠
+```
+
+结果：隐藏后再测全变成 0。因为 `display:none` 的元素没有布局盒子，jQuery 拿不到位置，测前要先让它显示。
+
 > ⚠️ `hide()` 之后 `offset()` 会返回全是 0 的无效值，需先显示再测，或改用 `visibility:hidden`。
 ===CH===
 no: 140
@@ -547,6 +616,17 @@ points: width 是内容、innerWidth 加 padding、outerWidth 加 border || oute
 | `.outerWidth(true)` | `offsetWidth + margin` |
 
 > 💡 只设了 `margin-left` 时，`outerWidth(true)` 会变而 `outerHeight(true)` 不变，别以为是算错。
+
+同一元素连测四次，就能看清四层宽度是怎么叠加的：
+
+```js
+$("div").width()                       // => 100，纯内容
+$("div").innerWidth()                  // => 120，加 padding
+$("div").outerWidth()                  // => 122，加 border
+$("div").outerWidth(true)              // => 222，再加 margin-left
+```
+
+结果：100→120→122→222 逐层变大。因为每多一个参数就把盒模型多算一层，`true` 连外边距也计入。
 
 ### 读与写的差别
 
@@ -622,7 +702,17 @@ $("div").off("click", "button")   // 解绑委托在 button 上的
 - 拖拽结束时要 `off("mousemove")`，否则事件会一直挂在 document 上
 - 同一事件绑了多个函数，解绑按名字精确定位，其余保留
 
-> ⚠️ 绑在 document 上的临时事件一定要在结束时解绑，否则鼠标松开后仍在触发。
+拖拽是最典型的「临时绑、结束解绑」场景：
+
+```js
+$("div").mousedown(function () {
+    $(document).mousemove(function () { console.log("move") })
+}).mouseup(function () {
+    $(document).off("mousemove")   // 松开就解绑，否则一直触发
+})
+```
+
+结果：按下才绑移动、松开即解绑。因为 mousemove 挂在 document 上，不解绑鼠标松开后仍会持续触发。
 
 ### 事件委托写法
 
@@ -793,6 +883,16 @@ $("#box").toggle(1000)
 - `slideDown(ms)`：向下展开，结束 `display:block`
 - `slideUp(ms)`：向上收起，结束 `display:none`
 - `slideToggle(ms)`：按当前状态切换
+
+三个方法共用同一套签名，切换写法如下：
+
+```js
+$("#box").slideDown(1000, "linear")    // 向下展开
+$("#box").slideUp(1000, "linear")      // 向上收起
+$("#box").slideToggle(1000)            // 按当前状态切换
+```
+
+结果：第一个把高度从 0 撑开，第二个收回 0，第三个自动判断。因为只改 height，内容不会被横向拉伸。
 
 > ⚠️ 元素要先有明确高度，收起动画才不会因高度自适应而抖动。
 

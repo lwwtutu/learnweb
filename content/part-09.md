@@ -41,6 +41,16 @@ var obj = {
 obj.say()   // => kerwin
 ```
 
+先看拆开写会怎样：
+
+```js
+var name = "kerwin"
+function say() { console.log(name) }
+say()   // => kerwin，但 name 和 say 谁都能在别处改
+```
+
+`name` 变成全局变量、`say` 变成全局函数，两者丢了归属；下面把它们装进同一个对象，方法靠 `this` 读自己的数据。
+
 这就是封装的第一层：数据与操作它的代码绑在一起管理，外部只能经由方法触碰数据。
 
 ### 封装、继承、多态各解决什么
@@ -110,6 +120,17 @@ console.log(new Object() === {})   // => false
 
 一个 `new Object()` 仍只能造一个对象，批量生产的问题还在，于是要把"造"这一步收进函数。
 
+`new` 包装类型和直接写字面量的差别可以直接测出来：
+
+```js
+var s1 = "abc"
+var s2 = new String("abc")
+console.log(typeof s1, typeof s2)   // => "string" "object"
+console.log(s1 === s2)              // => false
+```
+
+字面量得到原始值，`new String` 得到的是对象，两者类型不同，自然也不全等。
+
 ### 工厂函数：能批量，却认不出类型
 
 把造对象的过程包进普通函数，调用一次产出一个。
@@ -147,6 +168,19 @@ console.log(a.cook === b.cook)        // => false
 ```
 
 最后一行暴露了遗留问题：每 `new` 一次函数体就重跑，`cook` 会新建一块内存，N 个实例存 N 份相同方法。
+
+把 `new` 的四步写成代码，就能看清它替我们做了什么：
+
+```js
+function myNew(Ctor, ...args) {
+  var obj = {}
+  obj.__proto__ = Ctor.prototype
+  var res = Ctor.apply(obj, args)
+  return (typeof res === "object" && res !== null) ? res : obj
+}
+```
+
+它依次建空对象、接原型、用 `apply` 把 `this` 指向新对象执行函数体，最后返回该对象。
 
 ### 四种方式对照与下一步
 
@@ -228,6 +262,31 @@ console.log(window.name)    // => "kerwin"
 > ⚠️ 全局被悄悄污染，排查时往往看不出源头；严格模式下 `this` 是 `undefined`，赋值会立刻报错。
 
 防漏写还有 `instanceof` 自检和 `new.target` 两条路，最省心的其实是 `class`，引擎强制要求 `new`。
+
+先看 `new.target` 怎么把漏写挡住：
+
+```js
+function CreateObj(name) {
+  if (!new.target) throw new Error("必须用 new 调用")
+  this.name = name
+}
+CreateObj("kerwin")        // => Error: 必须用 new 调用
+console.log(new CreateObj("kerwin").name)   // => kerwin
+```
+
+普通调用时 `new.target` 为空，直接抛错；用 `new` 调用才正常，比悄悄污染全局安全得多。
+
+`instanceof` 自检则是另一种思路：
+
+```js
+function CreateObj(name) {
+  if (!(this instanceof CreateObj)) return new CreateObj(name)
+  this.name = name
+}
+console.log(CreateObj("kerwin").name)   // => kerwin，忘写 new 也补上了
+```
+
+它检测不到 `new` 就自己补一次 `new`，属于容错式防护，老库里很常见。
 
 ### return 的覆盖规则
 
@@ -336,6 +395,18 @@ console.log(p.abc)                                           // => undefined
 
 查找不到不会报错。`p.hasOwnProperty("name")` 能分清属性在自己身上还是来自原型，`"say" in p` 则是整条链上找。
 
+```js
+function Person() {}
+Person.prototype.say = function () {}
+var p = new Person()
+console.log(p.hasOwnProperty("say"))   // => false，来自原型
+console.log("say" in p)                // => true，整条链上能找到
+p.say = function () {}
+console.log(p.hasOwnProperty("say"))   // => true，现在写到了自己身上
+```
+
+`hasOwnProperty` 只看对象自身，`in` 会把原型链也算进去，两者配合就能定位属性到底住在哪一层。
+
 ### 方法挂原型 vs 挂实例的内存差别
 
 属性尤其数组、对象写在构造函数里各存一份，方法挂到 `prototype` 上全体共用一份。
@@ -359,6 +430,19 @@ console.log(a.say === b.say)   // => true
 | 方法 | `prototype` | 无状态，共享省内存 |
 
 > ⚠️ 若把 `hobby: []` 放到原型上，`a.hobby.push("篮球")` 会让 `b.hobby` 也变，因为两个实例读到的是同一个数组。
+
+这个坑用代码验证最直观：
+
+```js
+function Person() {}
+Person.prototype.hobby = []
+var a = new Person()
+var b = new Person()
+a.hobby.push("篮球")
+console.log(b.hobby)   // => ["篮球"]，b 也被影响了
+```
+
+`a.hobby.push` 是先顺着原型读到同一个数组、再改它的内容，并没有给 `a` 自己赋值，所以两个实例共享同一份。要独立就得把 `this.hobby = []` 写回构造函数里。
 
 ===CH===
 no: 101
@@ -527,6 +611,22 @@ console.log(Object.keys(CreateObj.prototype))   // => []
 | `new C("x")` | `new C("x")` |
 | 原型方法可枚举 | 原型方法不可枚举 |
 
+下面这段把两种写法摆在一起，调用方式完全相同：
+
+```js
+function C(n) { this.n = n }
+C.prototype.say = function () { return this.n }
+console.log(new C("x").say())   // => x
+
+class D {
+  constructor(n) { this.n = n }
+  say() { return this.n }
+}
+console.log(new D("x").say())   // => x
+```
+
+对应关系一目了然：`constructor` 接管函数体，`say() {}` 接管 `prototype.say`，而 `new` 的写法一点没变。
+
 `export default Tabs` 这类导出语句也不变，这就是等价关系最实际的价值。
 
 ### class 声明前不能用，且强制 new
@@ -551,6 +651,21 @@ B()   // => TypeError: Class constructor B cannot be invoked without 'new'
 | `typeof` | `"function"` | `"function"` |
 
 > ⚠️ `constructor` 里给未声明变量赋值会报 `ReferenceError`；方法单独取出再调用，严格模式下 `this` 是 `undefined`。
+
+### 补充笔记：静态方法
+
+类里还能定义挂在类本身、而不是实例上的方法，用 `static` 标记。
+
+```js
+class Person {
+  constructor(name) { this.name = name }
+  static create(name) { return new Person(name) }
+}
+console.log(Person.create("kerwin").name)   // => kerwin
+console.log(new Person("x").create)         // => undefined
+```
+
+实例方法挂在 `prototype` 供实例调用，`static` 方法挂在类上只能用 `Person.create()` 调，适合做工厂或工具方法。
 
 ===CH===
 no: 103
@@ -596,6 +711,16 @@ console.log(s.name, s.grade)   // => kerwin 100
 | `call` | 逐个 | `Person.call(this, name, age)` |
 | `apply` | 数组 | `Person.apply(this, [name, age])` |
 
+`call` 的本质不是继承，而是换掉函数执行时的 `this`：
+
+```js
+var obj2 = { grade: 100 }
+Person.call(obj2, "kerwin", 100)
+console.log(obj2)   // => { grade: 100, name: "kerwin", age: 100 }
+```
+
+把 `Person` 的函数体在 `obj2` 上跑一遍，它白得两个属性，子类继承属性正是借了这一点。
+
 > ⚠️ 这一步只执行了函数体、没碰 `Student.prototype`，所以原型上的 `say` 继承不到，`s.say()` 会报 `is not a function`。
 
 ### 原型链借方法
@@ -615,6 +740,17 @@ console.log(s instanceof Person)         // => true
 ```
 
 > ⚠️ 换原型要趁早，之后再挂新方法；顺序反了，先挂的方法会随旧原型一起被丢弃。`constructor` 换后会指向父类，需手动修正。
+
+为什么不能直接写 `= Parent.prototype`？因为那样父子会共用同一块原型：
+
+```js
+Student.prototype = Person.prototype
+Student.prototype.printGrade = function () {}
+var p = new Person("张三", 20)
+console.log(p.printGrade)   // => ƒ，父类实例莫名其妙多了子类方法
+```
+
+两个变量指向同一个对象，给子类加方法其实改的是父类原型，所以必须用 `new Person()` 造一层中间原型来隔开。
 
 ### 组合继承：两次调用父类构造的问题
 
@@ -726,6 +862,15 @@ console.log(Object.getPrototypeOf(Student.prototype) === Person.prototype) // =>
 
 子类不写 `constructor` 时，引擎会自动生成 `constructor(...args) { super(...args) }`。
 
+```js
+class Student extends Person {}
+
+var s = new Student("kerwin", 100)
+console.log(s)   // => Student { name: "kerwin", age: 100 }
+```
+
+虽然子类一个字没写，参数还是被自动转交给了父类的 `constructor`，所以属性照样挂到实例上。
+
 ### super 的两层含义
 
 `super()` 在构造里调用父类构造并初始化 `this`，`super.x()` 在方法里调用父类原型上的同名方法。
@@ -753,6 +898,19 @@ class Student extends Person {
 | `super.say()` | `Parent.prototype.say.call(this)` | 普通或静态方法里 |
 
 > ⚠️ 子类写了 `constructor` 却忘了 `super()`，或在 `super()` 之前用 `this`，都会抛 `ReferenceError`。
+
+下面这段就是把 `this` 写在 `super()` 之前的后果：
+
+```js
+class Student extends Person {
+  constructor(name, grade) {
+    this.grade = grade       // ReferenceError：super 之前没有 this
+    super(name)
+  }
+}
+```
+
+`extends` 类的实例由父类造出，`super()` 执行完才有 `this`；把赋值挪到 `super(name)` 之后就正常了。
 
 ### 方法覆盖与多态
 

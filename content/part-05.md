@@ -34,6 +34,15 @@ BOM 的入口 `window` 有两个身份：它代表浏览器窗口，同时也是
 
 在控制台用 `console.dir(window)` 展开，能看到几百个属性，其中就包括后面要拆开讲的那些成员。
 
+想亲自确认 window 有多少能力，可在控制台执行：
+
+```js
+console.dir(window)                     // 以对象形式展开
+console.log(Object.keys(window).length) // => 900 多（浏览器不同会有差异）
+```
+
+后面章节拆开讲的属性，例如 `alert`、`history`、`localStorage`，都在其中。
+
 ### 全局变量都是 window 的属性
 
 在全局用 `var` 声明变量，等于给 `window` 加了一个同名属性，反过来给 `window` 挂属性也能当全局变量读。
@@ -120,6 +129,16 @@ console.log(window.innerWidth, innerWidth)   // => 1280 1280
 
 核心关系是 `innerWidth = clientWidth + 滚动条宽度`。Windows 下 Chrome 的滚动条约 15px，前两个值不相等属于正常现象。
 
+三个宽度同时读一次，差异就清楚了：
+
+```js
+console.log(innerWidth)                            // => 1280（视口，含滚动条）
+console.log(document.documentElement.clientWidth)  // => 1265（不含滚动条）
+console.log(outerWidth > innerWidth)               // => true（整个窗口更大）
+```
+
+做布局以 `innerWidth` 为准，因为它量的是页面真正能显示的那块区域。
+
 ### 只读，而且只是「此刻」的快照
 
 这组值是只读的，赋新值既不报错也不生效。它还是一次读取的快照，不是实时绑定。
@@ -184,6 +203,16 @@ console.log("这行要等用户点掉弹框才打印")
 ```
 
 > 💡 配合定时器做「两秒后提示成功」，是它最常见的使用场景。
+
+把定时器和 `alert` 组合，就是常见的「两秒后提示成功」：
+
+```js
+setTimeout(function () {
+    alert("缓存清除成功")
+}, 2000)
+```
+
+回调里才弹框，所以操作先完成、提示延后出现；这正是第 36 章定时器的用法。
 
 ### confirm：问一句，要个答案
 
@@ -414,6 +443,16 @@ console.log(top)   // => 0（停在顶部时）
 
 > ⚠️ `pageYOffset` 只读，想主动改变位置得用可写的 `scrollTop` 或滚动方法。
 
+横向滚动的规则完全相同，只是把 `Top` 换成 `Left`：
+
+```js
+var left = document.documentElement.scrollLeft || document.body.scrollLeft
+console.log(left)                // => 0（没横向滚动时）
+console.log(window.pageXOffset)  // => 0（只读的标准写法）
+```
+
+兼容逻辑与 `scrollTop` 一致，标准版同样没有兼容问题。
+
 ### 滚动距离与窗口尺寸的关系
 
 最多还能往下滚多少，由文档总高减去视口高得到，正好把前面学的窗口尺寸串了起来。
@@ -636,6 +675,16 @@ console.log(obj.name)                              // => "kerwin"
 
 var n = localStorage.getItem("age") - 0           // => 200（转回数字）
 ```
+
+不先序列化就存对象，取出来是一段没用的字符串：
+
+```js
+localStorage.setItem("obj", { name: "kerwin" })
+console.log(localStorage.getItem("obj"))          // => "[object Object]"
+console.log(typeof localStorage.getItem("obj"))   // => "string"
+```
+
+所以对象必须先 `JSON.stringify`，取回后再 `JSON.parse` 还原。
 
 > ⚠️ 取出来不 `parse` 就直接用，`obj.name` 会是 `undefined`——因为它其实还是字符串。
 

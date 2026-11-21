@@ -25,6 +25,17 @@ console.log(document.title)                 // => "Document"
 
 `documentElement`、`head`、`body`、`title` 都是它的直接成员，分别指向根元素、head、body 和标题。取根元素只能用 `documentElement`，没有以标签名直接命名的简写。
 
+这几个成员不用查找，浏览器随页面一起创建，在控制台里直接展开就能看到：
+
+```js
+console.log(document.documentElement)   // => <html>…</html>
+console.log(document.head)              // => <head>…</head>
+console.log(document.body)              // => <body>…</body>
+console.log(document.body.innerHTML)    // => ""（空页面时）
+```
+
+拿到它们不必传任何参数，算根元素、滚动和视口尺寸时都从 `documentElement` 起步。
+
 ### 标签会被解析成 DOM 树
 
 浏览器从上往下读 HTML，会为每个标签创建一个对应的 JS 对象，再按嵌套关系连成一棵树，即 DOM 树。连标签之间的文字也会成为节点，这意味着树里不只有元素对象。
@@ -122,6 +133,16 @@ console.log(items.length)                 // => 7
 console.log(document.getElementsByName("user")[0].value)
 ```
 
+伪数组有 `length` 和索引，却没有数组方法，验证一下就清楚：
+
+```js
+var items = document.getElementsByClassName("item")
+console.log(items.forEach)                // => undefined（伪数组没有数组方法）
+console.log(Array.from(items).filter)      // => 函数（转成真数组后可用）
+```
+
+要用到 `forEach`、`filter` 得先 `Array.from` 转成真数组；普通的 `for` 遍历不受影响。
+
 ### 按 CSS 选择器获取
 
 `querySelector` 与 `querySelectorAll` 传的是 CSS 选择器，写法与 CSS 完全一致：id 前加 `#`、类名前加 `.`、后代用空格、属性用方括号。前者只返回第一个匹配元素或 `null`，后者返回全部匹配。
@@ -150,6 +171,18 @@ console.log(document.querySelectorAll("li").length)  // => 全部 li 的数量
 `querySelectorAll` 得到的是静态快照，拿到那一刻就定死，页面后来增删元素也不变。
 
 `getElementsByClassName` 得到的是动态集合，会随页面增删自动变长。所以在循环里删除元素时最容易踩坑：动态集合一边遍历一边变，静态集合保持原样。
+
+往页面里加一个元素，两种集合的差别立刻显现：
+
+```js
+var live = document.getElementsByTagName("li")   // 动态
+var dead = document.querySelectorAll("li")       // 静态
+document.body.innerHTML += "<li>新加的</li>"
+console.log(live.length)   // => 比原来多 1
+console.log(dead.length)   // => 还是原来的数
+```
+
+动态集合会跟着页面变长，静态快照则停在获取的那一刻，这就是循环删除时结果不同的根源。
 
 > ⚠️ 两组结果都带 `length` 和索引、能用 `for` 遍历，却没有 `forEach`、`filter` 等数组方法，要用得先 `Array.from(items)` 转成真数组。
 
@@ -200,6 +233,17 @@ H5 建议自定义属性以 `data-` 开头，好处是浏览器给了专用接�
 | `data-kerwin` | `dataset.kerwin` |
 
 新增用赋值 `dataset.xiaoming = "x"`，删除用 `delete`。由于值恒为字符串，`li.dataset.index === 0` 是 `false`，要和 `"0"` 比才成立。
+
+`dataset` 把 `data-` 属性映射成一个对象，读写和删除都直接在它上面操作：
+
+```js
+var box2 = document.querySelector("#box2")   // 假设标签上有 data-kerwin="hello"
+console.log(box2.dataset.kerwin)    // => "hello"（恒为字符串）
+box2.dataset.xiaoming = "hello3"    // 新增，标签上出现 data-xiaoming="hello3"
+delete box2.dataset.xiaoming        // 删除该属性
+```
+
+不用每次拼 `data-` 前缀，命名里遇到连字符会自动转成驼峰；但取回的值始终是字符串，做数字运算前要先转换。
 
 ### 布尔属性用布尔值读写
 
@@ -379,6 +423,18 @@ var sel = document.querySelector("#select")
 console.log(sel.value)            // => "2"（选中项的 value）
 ```
 
+给下拉框的 `value` 赋值能直接切换选中项，而普通元素根本没有 `value`：
+
+```js
+var box = document.querySelector("#box")
+console.log(box.value)        // => undefined（div 没有 value）
+var sel = document.querySelector("#select")
+sel.value = "3"               // => 下拉框自动选中第 3 项
+console.log(sel.value)        // => "3"
+```
+
+`select` 读写的都是 `option` 的 `value` 属性，不是显示的文字；若要读可见文字得取 `option` 的 `textContent`。
+
 ===CH===
 no: 53
 title: 案例：渲染页面
@@ -483,6 +539,16 @@ console.log(cs.backgroundColor)    // => "rgb(255, 0, 0)"
 cs.width = "10px"                  // 只读，赋值无效也不报错
 ```
 
+要拿尺寸参与运算时，`offsetWidth` 直接给数字，比带单位的样式值省事：
+
+```js
+var box = document.querySelector("#box")
+console.log(getComputedStyle(box).width)   // => "100px"（字符串，要 parseInt）
+console.log(box.offsetWidth)               // => 100（数字，可直接参与运算）
+```
+
+前者是样式表里写定的值，后者是浏览器算出的布局结果；需不需要带单位，决定了该用哪一个。
+
 ===CH===
 no: 55
 title: 操作元素类名
@@ -512,6 +578,18 @@ box.className = "item"                         // => 其余类名全被覆盖
 | `remove("x")` | 删除一个类 |
 | `contains("x")` | 判断是否含某类，返回布尔值 |
 | `replace("a", "b")` | 替换类名 |
+
+把四个方法放在一起看，每种操作只动一个类名：
+
+```js
+var box = document.querySelector("#box")   // 假设 class="item item1 item2"
+box.classList.add("item3")                  // 添加，重复添加不会报错
+box.classList.remove("item2")               // 删除一个类
+console.log(box.classList.contains("item")) // => true
+box.classList.replace("item1", "c")         // 替换类名
+```
+
+每个方法都只影响指定那个类，不会像 `className` 那样整体覆盖，这是切类比改字符串安全的原因。
 
 ### toggle 与第二参数
 
